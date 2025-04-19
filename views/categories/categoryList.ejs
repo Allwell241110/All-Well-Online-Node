@@ -1,0 +1,22 @@
+<main>
+  <div class="category-list-container">
+
+  <h1>Meta Categories</h1>
+
+  <a class="add-meta-category" href="/categories/static/add">Add</a>
+  <ul>
+
+    <% metaCategories.forEach(meta => { %>
+
+      <li>
+        <strong><%= meta.name %></strong>
+        <a href="/categories/meta/<%= meta._id %>/edit">Edit</a>
+      </li>
+    <% }) %>
+  </ul>
+</div>
+</main>
+
+
+
+  

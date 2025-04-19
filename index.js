@@ -80,7 +80,7 @@ app.use('/', homeRoute);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).render('static/404', { title: 'Page Not Found' });
+  res.status(404).render('404', { title: 'Page Not Found' });
 });
 
 // Connect to MongoDB and start server only after successful connection

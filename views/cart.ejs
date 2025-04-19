@@ -1,13 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Shopping Cart</title>
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-  <%- include('partials/header'), {cartItemCount, user} %>
-  <div class="cart-container">
+<main>
+ <div class="cart-container">
     <h1>Your Shopping Cart</h1>
 
     <% if (cart && cart.length > 0) { %>
@@ -59,8 +51,7 @@
     <% } else { %>
       <p>Your cart is empty.</p>
     <% } %>
-  </div>
+  </div> 
+</main>
+<script src="/js/cart.js"></script>
   
-  <script src="/js/cart.js"></script>
-</body>
-</html>

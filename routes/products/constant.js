@@ -11,7 +11,7 @@ router.get('/add-product', async (req, res) => {
     const mainCategories = await MainCategory.find();
     const subCategories = await SubCategory.find();
 
-    res.render('constant/addProductForm', {
+    res.render('products/addProductForm', {
       metaCategories,
       mainCategories,
       subCategories,

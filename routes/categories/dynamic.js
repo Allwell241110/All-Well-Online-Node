@@ -42,7 +42,7 @@ router.get('/meta/:id/edit', async (req, res) => {
     subsGroupedByMain[sub.main].push(sub);
   });
 
-  res.render('dynamic/editCategoryForm', {
+  res.render('categories/editCategoryForm', {
     meta,
     mains,
     subsGroupedByMain,
