@@ -1,0 +1,19 @@
+<div class="product-grid">
+  <% products.forEach(product => { %>
+    <div class="product-card" data-id="<%= product.name %>">
+      <img src="<%= product.images[0].url %>" alt="<%= product.name %>">
+      <h3><%= product.name %></h3>
+      <p class="price">
+        <% if (product.price !== product.salePrice) { %>
+          <span class="original">UGX <%= product.price.toLocaleString() %></span>
+          <span class="discounted">UGX <%= product.salePrice.toLocaleString() %></span>
+          <span class="percent">(-<%= Math.round((product.price - product.salePrice) / product.price * 100) %>%)</span>
+        <% } else { %>
+          <span class="discounted">UGX <%= product.price.toLocaleString() %></span>
+        <% } %>
+      </p>
+    </div>
+  <% }) %>
+</div>
+
+<script src="/js/productList.js"></script>

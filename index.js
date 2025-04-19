@@ -5,81 +5,82 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
 const session = require('express-session');
+const expressLayouts = require('express-ejs-layouts');
+
+const locals = require('./devUniversalData/locals');
+const cartMiddleware = require('./middleware/cartMiddleware');
 
 // Load env variables
 dotenv.config();
 
 const app = express();
 
+// Assign all local variables
+app.locals.user = locals.user;
+
+
+
+
+
+
+
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Session (if needed for login)
 app.use(session({
   secret: 'ecommerceSecretKey',
   resave: false,
   saveUninitialized: true
 }));
 
-// Set view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+
+
+app.use(expressLayouts);
+
+//Custom Middleware
+app.use(cartMiddleware);
+
+
+
+// Set view engine
+
+
 // Routes
 
-//MAJOR ROUTES:
+//Category routes
+
+// Static Views: just renders forms or non-data-dependent views
+const staticCategoryRoutes = require('./routes/categories/static');
+app.use('/categories/static', staticCategoryRoutes);
+
+// Constant Views: list of categories, dashboard views etc.
+const constantCategoryRoutes = require('./routes/categories/constant');
+app.use('/categories/constant', constantCategoryRoutes);
+
+// Dynamic Views + APIs: editing, submitting, deleting etc.
+const dynamicCategoryRoutes = require('./routes/categories/dynamic');
+app.use('/categories', dynamicCategoryRoutes); // keep this for standard REST paths
+
+//PRODUCT ROUTES:
+const constantProductRoutes = require('./routes/products/constant');
+app.use('/products/constant', constantProductRoutes);
+
+
 //Home Route:
-const homeRoute = require('./routes/homeRoute');
+const homeRoute = require('./routes/home/constant');
 app.use('/', homeRoute);
 
-//Dynamic Routes
-const productRoutes = require('./routes/productRoutes');
-app.use('/products', productRoutes);
-
-const cartRoutes = require('./routes/cartRoutes');
-app.use('/cart', cartRoutes);
-
-const orderRoutes = require('./routes/orderRoutes');
-app.use('/orders', orderRoutes);
-
-const reviewRoutes = require('./routes/reviewRoutes');
-app.use('/reviews', reviewRoutes);
-
-const userRoutes = require('./routes/userRoutes');
-app.use('/user', userRoutes);
-
-const userActivityRoutes = require('./routes/userActivityRoutes');
-app.use('/activities', userActivityRoutes);
-
-
-const categoryRoutes = require('./routes/categoryRoutes');
-app.use('/categories', categoryRoutes);
-
-
-
-
-//STATIC ROUTES:
-
-const adminForms = require('./routes/static/adminForms');
-app.use('/forms/admin', adminForms);
-
-const authForms = require('./routes/static/authForms');
-app.use('/forms/auth', authForms);
-
-const pagesRoutes = require('./routes/static/pageViews');
-app.use('/pages', pagesRoutes);
-
-const productForms = require('./routes/static/productForms');
-app.use('/products', productForms);
 
 
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).render('404', { title: 'Page Not Found' });
+  res.status(404).render('static/404', { title: 'Page Not Found' });
 });
 
 // Connect to MongoDB and start server only after successful connection

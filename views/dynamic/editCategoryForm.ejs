@@ -1,0 +1,69 @@
+<!-- Edit Meta Category Form -->
+
+<form action="/categories/meta/<%= meta._id %>/update" method="POST">
+  <h2>Edit Meta Category</h2>
+  <label>Meta Category Name</label>
+  <input type="text" name="metaName" value="<%= meta.name %>" required>  <hr>  <h3>Main Categories</h3>
+  <div id="main-list">
+    <% mains.forEach(main => { %>
+      <div class="main-group">
+        <input type="hidden" name="mainIds[]" value="<%= main._id %>">
+        <input type="text" name="mainNames[]" value="<%= main.name %>" required>
+        <button type="button" onclick="removeMain(this, '<%= main._id %>')">Delete Main</button><div class="sub-list">
+      <% if (subsGroupedByMain[main._id]) { %>
+        <% subsGroupedByMain[main._id].forEach(sub => { %>
+          <div class="sub-group">
+            <input type="hidden" name="subIds[<%= main._id %>][]" value="<%= sub._id %>">
+            <input type="text" name="subNames[<%= main._id %>][]" value="<%= sub.name %>" required>
+            <button type="button" onclick="this.parentElement.remove()">Remove Sub</button>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <button type="button" onclick="addSub(this, '<%= main._id %>')">+ Add Sub</button>
+  </div>
+<% }) %>
+
+  </div><button type="button" onclick="addMain()">+ Add Main</button>
+
+  <input type="hidden" name="deletedMainIds" id="deletedMainIds">
+  <hr>
+  <button type="submit">Save Changes</button>
+</form>
+
+
+<script>
+  const deletedMainIds = [];
+
+  function removeMain(btn, mainId) {
+    deletedMainIds.push(mainId);
+    document.getElementById('deletedMainIds').value = deletedMainIds.join(',');
+    btn.parentElement.remove();
+  }
+
+  function addSub(btn, mainId) {
+    const container = document.createElement('div');
+    container.classList.add('sub-group');
+    container.innerHTML = `
+      <input type="hidden" name="subIds[${mainId}][]" value="new">
+      <input type="text" name="subNames[${mainId}][]" placeholder="New sub category" required>
+      <button type="button" onclick="this.parentElement.remove()">Remove</button>
+    `;
+    btn.parentElement.querySelector('.sub-list').appendChild(container);
+  }
+
+  function addMain() {
+    const uniqueId = 'main_' + Date.now();
+    const container = document.createElement('div');
+    container.classList.add('main-group');
+    container.innerHTML = `
+      <input type="hidden" name="mainIds[]" value="new">
+      <input type="text" name="mainNames[]" placeholder="New main category" required>
+      <button type="button" onclick="removeMain(this, '${uniqueId}')">Remove Main</button>
+      <div class="sub-list"></div>
+      <button type="button" onclick="addSub(this, '${uniqueId}')">+ Add Sub</button>
+    `;
+    document.getElementById('main-list').appendChild(container);
+  }
+</script>

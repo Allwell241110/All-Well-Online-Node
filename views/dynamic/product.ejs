@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= product.name %> - All Well Online</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  
+  <%- include('partials/header'), {cartItemCount, user} %>
+  
+  <section class="product-details">
+    <div class="container">
+      <div class="product-wrapper">
+        <div class="product-images">
+          <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="main-image" />
+          <div class="thumbnail-row">
+            <% product.images.forEach((img, i) => { %>
+              <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" />
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="product-info">
+          <h1><%= product.name %></h1>
+          <p class="brand">Brand: <%= product.brand || 'Unknown' %></p>
+          <div class="price-box">
+            <% if (product.salePrice && product.salePrice < product.price) {
+              const discount = Math.round(((product.price - product.salePrice) / product.price) * 100);
+            %>
+              <span class="sale-price">UGX <%= product.salePrice.toLocaleString() %></span>
+              <span class="original-price">UGX <%= product.price.toLocaleString() %></span>
+              <span class="discount">-<%= discount %>%</span>
+            <% } else { %>
+              <span class="regular-price">UGX <%= product.price.toLocaleString() %></span>
+            <% } %>
+          </div>
+
+          <p class="description"><%= product.description %></p>
+          <p class="stock"><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></p>
+
+          <div class="btn-container">
+            <%- include('partials/addToCart'), { product } %>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <script src="/js/product.js"></script>
+</body>
+</html>

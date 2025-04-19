@@ -1,0 +1,52 @@
+<div class="add-product-form">
+ <div>
+<h1>Create a New Product</h1>
+<form id="productForm" action="/api/products" method="POST" enctype="multipart/form-data">
+  
+  <%- include('partials/constant/selectCategory', {
+  metaCategories,
+  mainCategories,
+  subCategories
+}) %>
+
+
+  <div><label for="name">Product Name:</label><input type="text" id="name" name="name" required /></div>
+  <div><label for="description">Product Description:</label><textarea id="description" name="description" required></textarea></div>
+  <div><label for="price">Price:</label><input type="number" id="price" name="price" required /></div>
+  <div><label for="salePrice">Sale Price (optional):</label><input type="number" id="salePrice" name="salePrice" /></div>
+  <div><label for="brand">Brand:</label><input type="text" id="brand" name="brand" required /></div>
+  
+  <div><label for="stock">Stock Quantity:</label><input type="number" id="stock" name="stock" required /></div>
+
+  <div>
+    <label for="images">Product Images:</label>
+    <div class="preview-container" id="previewContainer"></div>
+    <input type="file" id="images" name="images" accept="image/*" multiple />
+  </div>
+
+  <button id="submit-button" type="submit">Create Product</button>
+</form>
+
+
+</div> 
+</div>
+<script>
+document.getElementById('metaCategory').addEventListener('change', function () {
+  const selectedMeta = this.value;
+  const mainOptions = document.querySelectorAll('#mainCategory option');
+  mainOptions.forEach(opt => {
+    opt.style.display = (opt.getAttribute('data-meta') === selectedMeta || !opt.value) ? 'block' : 'none';
+  });
+  document.getElementById('mainCategory').value = '';
+  document.getElementById('subCategory').value = '';
+});
+
+document.getElementById('mainCategory').addEventListener('change', function () {
+  const selectedMain = this.value;
+  const subOptions = document.querySelectorAll('#subCategory option');
+  subOptions.forEach(opt => {
+    opt.style.display = (opt.getAttribute('data-main') === selectedMain || !opt.value) ? 'block' : 'none';
+  });
+  document.getElementById('subCategory').value = '';
+});
+</script>

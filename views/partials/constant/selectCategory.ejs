@@ -1,0 +1,40 @@
+<div class="select-category-container">
+  
+  <div class="form-group">
+  <label for="metaCategory">Meta Category</label>
+  <select id="metaCategory" name="metaCategory" required>
+    <option value="">-- Select Meta Category --</option>
+    <% metaCategories.forEach(meta => { %>
+      <option value="<%= meta._id %>"><%= meta.name %></option>
+    <% }) %>
+  </select>
+</div>
+
+  <div class="form-group">
+  <label for="mainCategory">Main Category</label>
+  <select id="mainCategory" name="mainCategory" required>
+    <option value="">-- Select Main Category --</option>
+    <% mainCategories.forEach(main => { %>
+      <option value="<%= main._id %>" data-meta="<%= main.metaCategory %>">
+        <%= main.name %>
+      </option>
+    <% }) %>
+  </select>
+</div>
+
+  <div class="form-group">
+  <label for="subCategory">Sub Category</label>
+  <select id="subCategory" name="subCategory" required>
+    <option value="">-- Select Sub Category --</option>
+    <% subCategories.forEach(sub => { %>
+      <option value="<%= sub._id %>" data-main="<%= sub.mainCategory %>">
+        <%= sub.name %>
+      </option>
+    <% }) %>
+  </select>
+</div>
+  
+  
+</div>
+
+

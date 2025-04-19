@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shopping Cart</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/header'), {cartItemCount, user} %>
+  <div class="cart-container">
+    <h1>Your Shopping Cart</h1>
+
+    <% if (cart && cart.length > 0) { %>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Subtotal</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% let total = 0; %>
+          <% cart.forEach(item => { 
+            const price = item.price;
+            const subtotal = price * item.quantity;
+            total += subtotal;
+          %>
+            <tr>
+              <td class="product-info">
+                <img src="<%= item.image %>" alt="<%= item.name %>">
+                <span><%= item.name %></span>
+              </td>
+              <td>UGX<%= price.toFixed(2) %></td>
+              <td>
+                <form method="POST" action="/cart/update">
+                  <input type="hidden" name="productId" value="<%= item.productId %>">
+                  <input type="number" name="quantity" value="<%= item.quantity %>" min="0">
+                  <button type="submit">Update</button>
+                </form>
+              </td>
+              <td>UGX<%= subtotal.toFixed(2) %></td>
+              <td>
+                <form method="POST" action="/cart/remove">
+                  <input type="hidden" name="productId" value="<%= item.productId %>">
+                  <button type="submit">Remove</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <div class="cart-total">
+        <h3>Total: UGX<%= total.toFixed(2) %></h3>
+        <a href="/checkout" class="checkout-btn">Proceed to Checkout</a>
+      </div>
+    <% } else { %>
+      <p>Your cart is empty.</p>
+    <% } %>
+  </div>
+  
+  <script src="/js/cart.js"></script>
+</body>
+</html>

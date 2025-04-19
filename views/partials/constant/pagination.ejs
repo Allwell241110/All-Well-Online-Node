@@ -1,0 +1,27 @@
+<div class="pagination-wrapper">
+  <form id="limit-form" method="GET" action="/products">
+    <label for="limit">Items per page:</label>
+    <select name="limit" id="limit" onchange="this.form.submit()">
+      <option value="12" <%= limit == 12 ? 'selected' : '' %>>12</option>
+      <option value="24" <%= limit == 24 ? 'selected' : '' %>>24</option>
+      <option value="48" <%= limit == 48 ? 'selected' : '' %>>48</option>
+    </select>
+    <input type="hidden" name="page" value="<%= currentPage %>">
+  </form>
+
+  <div class="pagination-links">
+    <% if (currentPage > 1) { %>
+      <a href="?page=<%= currentPage - 1 %>&limit=<%= limit %>" class="page-btn">Prev</a>
+    <% } %>
+
+    <% for (let i = 1; i <= totalPages; i++) { %>
+      <a href="?page=<%= i %>&limit=<%= limit %>" class="page-btn <%= i === currentPage ? 'active' : '' %>">
+        <%= i %>
+      </a>
+    <% } %>
+
+    <% if (currentPage < totalPages) { %>
+      <a href="?page=<%= currentPage + 1 %>&limit=<%= limit %>" class="page-btn">Next</a>
+    <% } %>
+  </div>
+</div>
