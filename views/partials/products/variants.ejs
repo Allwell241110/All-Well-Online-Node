@@ -1,0 +1,84 @@
+<div id="variant-section">
+  <h3>Product Variants</h3>
+
+  <div class="variant-group">
+    <label>Variant Name</label>
+    <input type="text" name="variants[0][name]" required>
+
+    <label>Image (optional)</label>
+    <input type="file" name="variants[0][image]" accept="image/*"
+           onchange="handleVariantImagePreview(event, 0)">
+    <div class="image-preview" id="image-preview-0"></div>
+
+    <label>Price (optional)</label>
+    <input type="number" step="0.01" name="variants[0][price]">
+
+    <button type="button" class="remove-variant" onclick="removeVariant(this)">Remove</button>
+  </div>
+
+  <button type="button" id="add-variant" onclick="addVariant()">Add Another Variant</button>
+</div>
+
+<script>
+  let variantCount = 1;
+
+  function addVariant() {
+    const section = document.getElementById('variant-section');
+
+    const container = document.createElement('div');
+    container.className = 'variant-group';
+    container.innerHTML = `
+      <hr>
+      <label>Variant Name</label>
+      <input type="text" name="variants[${variantCount}][name]" required>
+
+      <label>Image (optional)</label>
+      <input type="file" name="variants[${variantCount}][image]" accept="image/*"
+             onchange="handleVariantImagePreview(event, ${variantCount})">
+      <div class="image-preview" id="image-preview-${variantCount}"></div>
+
+      <label>Price (optional)</label>
+      <input type="number" step="0.01" name="variants[${variantCount}][price]">
+
+      <button type="button" class="remove-variant" onclick="removeVariant(this)">Remove</button>
+    `;
+
+    // Insert above the Add Variant button
+    const addBtn = document.getElementById('add-variant');
+    section.insertBefore(container, addBtn);
+
+    variantCount++;
+  }
+
+  function handleVariantImagePreview(event, index) {
+    const previewDiv = document.getElementById(`image-preview-${index}`);
+    previewDiv.innerHTML = "";
+
+    const file = event.target.files[0];
+    if (file) {
+      const imgURL = URL.createObjectURL(file);
+      const wrapper = document.createElement("div");
+      wrapper.className = "image-wrapper";
+
+      const img = document.createElement("img");
+      img.src = imgURL;
+      img.alt = "Preview";
+
+      const closeBtn = document.createElement("span");
+      closeBtn.className = "close-btn";
+      closeBtn.textContent = "×";
+      closeBtn.onclick = () => {
+        previewDiv.innerHTML = "";
+        event.target.value = ""; // clear file input
+      };
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(closeBtn);
+      previewDiv.appendChild(wrapper);
+    }
+  }
+
+  function removeVariant(button) {
+    button.parentElement.remove();
+  }
+</script>

@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const productSchema = new mongoose.Schema({
   name: String,
   description: String,
@@ -11,11 +13,15 @@ const productSchema = new mongoose.Schema({
   numReviews: Number,
 
   variants: [{
-    type: { type: String }, // e.g. "Color", "Size"
-    options: [{
-      name: String,         // e.g. "Red", "Large"
-      priceAdjustment: Number, // Optional
-      stock: Number         // Optional: track per variant
-    }]
-  }]
+  name: String,              // e.g. "Red", "Large"
+  priceAdjustment: Number,   // Optional
+  stock: Number,             // Optional
+  image: {
+    url: String,
+    deleteHash: String
+  }
+}]
 }, { timestamps: true });
+
+// Export the model
+module.exports = mongoose.model('Product', productSchema);

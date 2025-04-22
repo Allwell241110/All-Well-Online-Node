@@ -1,40 +1,64 @@
-<div class="select-category-container">
-  
+<div class="category-selectors">
   <div class="form-group">
-  <label for="metaCategory">Meta Category</label>
-  <select id="metaCategory" name="metaCategory" required>
-    <option value="">-- Select Meta Category --</option>
-    <% metaCategories.forEach(meta => { %>
-      <option value="<%= meta._id %>"><%= meta.name %></option>
-    <% }) %>
-  </select>
-</div>
-
-  <div class="form-group">
-  <label for="mainCategory">Main Category</label>
-  <select id="mainCategory" name="mainCategory" required>
-    <option value="">-- Select Main Category --</option>
-    <% mainCategories.forEach(main => { %>
-      <option value="<%= main._id %>" data-meta="<%= main.metaCategory %>">
-        <%= main.name %>
-      </option>
-    <% }) %>
-  </select>
-</div>
+    <label for="metaCategory">Meta Category:</label>
+    <select id="metaCategory" class="select-meta" required>
+      <option value="">-- Select Meta Category --</option>
+      <% metaCategories.forEach(meta => { %>
+        <option value="<%= meta._id %>"><%= meta.name %></option>
+      <% }); %>
+    </select>
+  </div>
 
   <div class="form-group">
-  <label for="subCategory">Sub Category</label>
-  <select id="subCategory" name="subCategory" required>
-    <option value="">-- Select Sub Category --</option>
-    <% subCategories.forEach(sub => { %>
-      <option value="<%= sub._id %>" data-main="<%= sub.mainCategory %>">
-        <%= sub.name %>
-      </option>
-    <% }) %>
-  </select>
-</div>
-  
-  
+    <label for="mainCategory">Main Category:</label>
+    <select id="mainCategory" class="select-main" required>
+      <option value="">-- Select Main Category --</option>
+      <% mainCategories.forEach(main => { %>
+        <option value="<%= main._id %>" data-meta="<%= main.meta %>"><%= main.name %></option>
+      <% }); %>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="subCategory">Sub Category:</label>
+    <select id="subCategory" class="select-sub" required>
+      <option value="">-- Select Sub Category --</option>
+      <% subCategories.forEach(sub => { %>
+        <option value="<%= sub._id %>" >
+          <%= sub.name %>
+        </option>
+      <% }); %>
+    </select>
+  </div>
 </div>
 
+<script>
+  const metaSelect = document.querySelector('.select-meta');
+  const mainSelect = document.querySelector('.select-main');
+  const subCategorySelect = document.querySelector('.select-sub');
 
+  function filterOptions(select, attr, value) {
+    Array.from(select.options).forEach(opt => {
+      if (!opt.value) return;
+      opt.style.display = opt.dataset[attr] === value ? 'block' : 'none';
+    });
+    select.value = '';
+  }
+
+  metaSelect.addEventListener('change', () => {
+    filterOptions(mainSelect, 'meta', metaSelect.value);
+    filterOptions(subSelect, 'meta', metaSelect.value);
+    finalSubInput.dataset.selectedSub = '';
+  });
+
+  mainSelect.addEventListener('change', () => {
+    filterOptions(subSelect, 'main', mainSelect.value);
+    finalSubInput.dataset.selectedSub = '';
+  });
+
+
+  subCategorySelect.addEventListener('change', function () {
+   window.subCatId = subCategorySelect.value;
+   );
+});
+</script>

@@ -70,6 +70,9 @@ app.use('/categories', dynamicCategoryRoutes); // keep this for standard REST pa
 const constantProductRoutes = require('./routes/products/constant');
 app.use('/products/constant', constantProductRoutes);
 
+const dynamicProductRoutes = require('./routes/products/dynamic');
+app.use('/products', dynamicProductRoutes);
+
 
 //Home Route:
 const homeRoute = require('./routes/home/constant');

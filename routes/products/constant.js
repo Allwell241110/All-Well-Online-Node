@@ -10,6 +10,7 @@ router.get('/add-product', async (req, res) => {
     const metaCategories = await MetaCategory.find();
     const mainCategories = await MainCategory.find();
     const subCategories = await SubCategory.find();
+    console.log(metaCategories, mainCategories, subCategories);
 
     res.render('products/addProductForm', {
       metaCategories,

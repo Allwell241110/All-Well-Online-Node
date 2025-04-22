@@ -1,9 +1,11 @@
 <div class="add-product-form">
  <div>
 <h1>Create a New Product</h1>
-<form id="productForm" action="/api/products" method="POST" enctype="multipart/form-data">
+<form id="productForm" action="/products" method="POST" enctype="multipart/form-data">
   
-  <%- include('partials/categories/select', {
+  <%- include('../partials/products/imageUploader') %>
+  
+  <%- include('../partials/categories/select', {
   metaCategories,
   mainCategories,
   subCategories
@@ -17,12 +19,8 @@
   <div><label for="brand">Brand:</label><input type="text" id="brand" name="brand" required /></div>
   
   <div><label for="stock">Stock Quantity:</label><input type="number" id="stock" name="stock" required /></div>
-
-  <div>
-    <label for="images">Product Images:</label>
-    <div class="preview-container" id="previewContainer"></div>
-    <input type="file" id="images" name="images" accept="image/*" multiple />
-  </div>
+  
+  <%- include('../partials/products/variants') %>
 
   <button id="submit-button" type="submit">Create Product</button>
 </form>
@@ -30,23 +28,98 @@
 
 </div> 
 </div>
-<script>
-document.getElementById('metaCategory').addEventListener('change', function () {
-  const selectedMeta = this.value;
-  const mainOptions = document.querySelectorAll('#mainCategory option');
-  mainOptions.forEach(opt => {
-    opt.style.display = (opt.getAttribute('data-meta') === selectedMeta || !opt.value) ? 'block' : 'none';
-  });
-  document.getElementById('mainCategory').value = '';
-  document.getElementById('subCategory').value = '';
-});
 
-document.getElementById('mainCategory').addEventListener('change', function () {
-  const selectedMain = this.value;
-  const subOptions = document.querySelectorAll('#subCategory option');
-  subOptions.forEach(opt => {
-    opt.style.display = (opt.getAttribute('data-main') === selectedMain || !opt.value) ? 'block' : 'none';
+<script>
+  document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const productName = document.getElementById('name').value;
+    const productDescription = document.getElementById('description').value;
+    const productPrice = document.getElementById('price').value;
+    const productSalePrice = document.getElementById('salePrice').value;
+    const productBrand = document.getElementById('brand').value;
+    const productStock = document.getElementById('stock').value;
+
+    const formData = new FormData();
+    
+    //Handle variants:
+  async function collectVariants() {
+    const variantGroups = document.querySelectorAll('.variant-group');
+    const variants = [];
+
+    for (let group of variantGroups) {
+      const name = group.querySelector('input[name*="[name]"]').value;
+      const price = parseFloat(group.querySelector('input[name*="[price]"]').value) || 0;
+      const fileInput = group.querySelector('input[name*="[image]"]');
+      const file = fileInput.files[0];
+
+      let base64Image = null;
+
+      if (file) {
+        base64Image = await toBase64(file);
+      }
+
+      variants.push({
+        name,
+        priceAdjustment: price,
+        imageBase64: base64Image
+      });
+    }
+
+    window.variants = variants;
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  }
+  await collectVariants(); // Important: wait for images to convert
+
+    // Append text fields
+    formData.append('productName', productName);
+    formData.append('productDescription', productDescription);
+    formData.append('productPrice', productPrice);
+    formData.append('productSalePrice', productSalePrice);
+    formData.append('productBrand', productBrand);
+    formData.append('productStock', productStock);
+    formData.append('subCatId', window.subCatId || '');
+
+    // Append variants (as JSON string)
+    formData.append('variants', JSON.stringify(window.variants || []));
+
+    // Append selected images
+    (window.selectedImages || []).forEach((file, index) => {
+      formData.append('images', file); // field name should match your backend
+    });
+
+    try {
+  const res = await fetch('/products', {
+    method: 'POST',
+    body: formData
   });
-  document.getElementById('subCategory').value = '';
-});
+
+  const result = await res.json();
+  console.log('Server response:', result);
+
+  if (res.ok) {
+    document.getElementById('productForm').reset();
+    window.selectedImages = [];
+    window.variants = [];
+    window.subCatId = '';
+
+    // Optional: show a success message
+    alert('Product uploaded successfully!');
+  } else {
+    // Optional: handle validation errors or server messages
+    console.error('Server error:', result.message || result);
+    alert('Upload failed: ' + (result.message || 'Unknown error'));
+  }
+} catch (err) {
+  console.error('Upload failed:', err);
+  alert('Something went wrong. Please try again.');
+}
 </script>
