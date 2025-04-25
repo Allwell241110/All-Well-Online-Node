@@ -11,7 +11,7 @@
 
   <div class="form-group">
     <label for="mainCategory">Main Category:</label>
-    <select id="mainCategory" class="select-main" required>
+    <select id="mainCategory" class="select-main" required disabled>
       <option value="">-- Select Main Category --</option>
       <% mainCategories.forEach(main => { %>
         <option value="<%= main._id %>" data-meta="<%= main.meta %>"><%= main.name %></option>
@@ -21,10 +21,13 @@
 
   <div class="form-group">
     <label for="subCategory">Sub Category:</label>
-    <select id="subCategory" class="select-sub" required>
+    <select id="subCategory" class="select-sub" name="subCategoryId" required disabled>
       <option value="">-- Select Sub Category --</option>
       <% subCategories.forEach(sub => { %>
-        <option value="<%= sub._id %>" >
+        <option value="<%= sub._id %>" 
+                data-main="<%= sub.main %>" 
+                data-meta="<%= sub.meta %>" 
+                <%= selectedSubCategoryId === sub._id.toString() ? 'selected' : '' %>>
           <%= sub.name %>
         </option>
       <% }); %>
@@ -35,30 +38,65 @@
 <script>
   const metaSelect = document.querySelector('.select-meta');
   const mainSelect = document.querySelector('.select-main');
-  const subCategorySelect = document.querySelector('.select-sub');
+  const subSelect = document.querySelector('.select-sub');
+
+  const mainOptions = Array.from(mainSelect.options);
+  const subOptions = Array.from(subSelect.options);
 
   function filterOptions(select, attr, value) {
-    Array.from(select.options).forEach(opt => {
-      if (!opt.value) return;
-      opt.style.display = opt.dataset[attr] === value ? 'block' : 'none';
+    Array.from(select.options).forEach(option => {
+      if (!option.value) return;
+      option.style.display = option.dataset[attr] === value ? 'block' : 'none';
     });
     select.value = '';
   }
 
   metaSelect.addEventListener('change', () => {
-    filterOptions(mainSelect, 'meta', metaSelect.value);
-    filterOptions(subSelect, 'meta', metaSelect.value);
-    finalSubInput.dataset.selectedSub = '';
+    const selectedMeta = metaSelect.value;
+    if (selectedMeta) {
+      mainSelect.disabled = false;
+      filterOptions(mainSelect, 'meta', selectedMeta);
+      subSelect.disabled = true;
+      subSelect.value = '';
+    } else {
+      mainSelect.disabled = true;
+      mainSelect.value = '';
+      subSelect.disabled = true;
+      subSelect.value = '';
+    }
   });
 
   mainSelect.addEventListener('change', () => {
-    filterOptions(subSelect, 'main', mainSelect.value);
-    finalSubInput.dataset.selectedSub = '';
+    const selectedMain = mainSelect.value;
+    if (selectedMain) {
+      subSelect.disabled = false;
+      filterOptions(subSelect, 'main', selectedMain);
+    } else {
+      subSelect.disabled = true;
+      subSelect.value = '';
+    }
   });
 
+  // Auto-fill logic for edit mode
+  const selectedSub = subSelect.querySelector('option:checked');
+  if (selectedSub) {
+    const selectedMainId = selectedSub.dataset.main;
+    const selectedMetaId = selectedSub.dataset.meta;
 
-  subCategorySelect.addEventListener('change', function () {
-   window.subCatId = subCategorySelect.value;
-   );
-});
+    // Pre-fill main & meta
+    metaSelect.value = selectedMetaId;
+    mainSelect.disabled = false;
+    filterOptions(mainSelect, 'meta', selectedMetaId);
+    mainSelect.value = selectedMainId;
+
+    subSelect.disabled = false;
+    filterOptions(subSelect, 'main', selectedMainId);
+  }
+
+  document.getElementById('productForm')?.addEventListener('submit', (e) => {
+    if (!metaSelect.value || !mainSelect.value || !subSelect.value) {
+      e.preventDefault();
+      alert('Please select all category levels in order.');
+    }
+  });
 </script>

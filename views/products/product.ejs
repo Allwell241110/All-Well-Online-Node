@@ -1,14 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title><%= product.name %> - All Well Online</title>
-  <link rel="stylesheet" href="/css/style.css" />
-</head>
-<body>
-  
-  <%- include('partials/header'), {cartItemCount, user} %>
-  
+<main>
   <section class="product-details">
     <div class="container">
       <div class="product-wrapper">
@@ -40,7 +30,7 @@
           <p class="stock"><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></p>
 
           <div class="btn-container">
-            <%- include('partials/addToCart'), { product } %>
+            <%- include('../partials/addToCart'), { product } %>
           </div>
           
         </div>
@@ -49,5 +39,4 @@
   </section>
   
   <script src="/js/product.js"></script>
-</body>
-</html>
+</main>

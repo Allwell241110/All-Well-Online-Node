@@ -1,4 +1,11 @@
 <main>
-  <div class="not-found-page"></div>
+  <div class="not-found-page">
+    <p class="not-found-paragraph">
+      <% if (message) { %>
+        <%= message %>
+      <% } else { %>
+        Page Not Found
+      <% } %>
+    </p>
+  </div>
 </main>
-

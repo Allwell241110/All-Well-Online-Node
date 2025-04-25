@@ -1,10 +1,20 @@
 <div class="image-uploader">
   <label for="productImages" class="upload-label">Upload Product Images</label>
-  <input type="file" id="productImages" multiple accept="image/*" hidden>
+  <input type="file" id="productImages" name="newImages" multiple accept="image/*" hidden>
 
   <button type="button" class="upload-trigger">Select Images</button>
 
-  <div class="preview-container" id="imagePreviewContainer"></div>
+  <div class="preview-container" id="imagePreviewContainer">
+    <% if (images && images.length) { %>
+      <% images.forEach(img => { %>
+        <div class="image-wrapper existing-image" data-url="<%= img.url %>">
+          <img src="<%= img.url %>" alt="Existing Image" class="preview-image" />
+          <span class="remove-btn" title="Remove">&times;</span>
+          <input type="hidden" name="existingImages[]" value="<%= img.url %>">
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
 </div>
 
 <script>
@@ -13,6 +23,7 @@
   const previewContainer = document.getElementById('imagePreviewContainer');
 
   const selectedImages = [];
+  const removedImageURLs = [];
 
   triggerBtn.addEventListener('click', () => fileInput.click());
 
@@ -25,15 +36,12 @@
       reader.onload = (e) => {
         const url = e.target.result;
 
-        // Check if already added
         if (selectedImages.find(img => img.name === file.name && img.size === file.size)) return;
 
         selectedImages.push(file);
 
         const wrapper = document.createElement('div');
-        wrapper.className = 'image-wrapper';
-        wrapper.setAttribute('data-filename', file.name);
-
+        wrapper.className = 'image-wrapper new-image';
         wrapper.innerHTML = `
           <img src="${url}" alt="${file.name}" class="preview-image" />
           <span class="remove-btn" title="Remove">&times;</span>
@@ -51,11 +59,25 @@
       reader.readAsDataURL(file);
     });
 
-    // Optional: Reset input so same image can be selected again
     fileInput.value = '';
-    
     window.selectedImages = selectedImages;
-    
   });
-  
+
+  // Handle removing existing images (in edit mode)
+  document.querySelectorAll('.existing-image .remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const wrapper = e.target.closest('.existing-image');
+      const url = wrapper.dataset.url;
+
+      removedImageURLs.push(url);
+      wrapper.remove();
+
+      // Add hidden input to mark it for removal
+      const removedInput = document.createElement('input');
+      removedInput.type = 'hidden';
+      removedInput.name = 'removedImages[]';
+      removedInput.value = url;
+      document.querySelector('form').appendChild(removedInput);
+    });
+  });
 </script>

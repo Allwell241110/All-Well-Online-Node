@@ -1,19 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>All Well Online</title>
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-
-  <!-- Header with cart and user info -->
-  <%- include('partials/header', { cartItemCount, user }) %>
+<main>
 
   <!-- Filters (search, category, sort) -->
-  <%- include('partials/productFilters', {
-    categories,
-    selectedCategory,
+  <%- include('../partials/products/productFilters', {
     sort,
     searchQuery,
     currentPage,
@@ -21,17 +9,14 @@
   }) %>
 
   <!-- Product listing -->
-  <%- include('partials/productList', { products }) %>
+  <%- include('../partials/products/productList', { products }) %>
 
   <!-- Pagination controls -->
-  <%- include('partials/pagination', {
+  <%- include('../partials/products/pagination', {
     currentPage,
     totalPages,
-    selectedCategory,
     sort,
-    limit,
-    searchQuery
+    limit
   }) %>
 
-</body>
-</html>
+</main>

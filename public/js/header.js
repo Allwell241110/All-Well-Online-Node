@@ -16,6 +16,6 @@ function closeMenu() {
 
     if (query) {
       // redirect to search results page
-      window.location.href = `/products?q=${encodeURIComponent(query)}`;
+      window.location.href = `/products?search=${encodeURIComponent(query)}`;
     }
   });

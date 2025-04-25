@@ -9,6 +9,7 @@ const expressLayouts = require('express-ejs-layouts');
 
 const locals = require('./devUniversalData/locals');
 const cartMiddleware = require('./middleware/cartMiddleware');
+const methodOverride = require('method-override');
 
 // Load env variables
 dotenv.config();
@@ -34,6 +35,8 @@ app.use(session({
   resave: false,
   saveUninitialized: true
 }));
+
+app.use(methodOverride('_method'));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -74,6 +77,11 @@ const dynamicProductRoutes = require('./routes/products/dynamic');
 app.use('/products', dynamicProductRoutes);
 
 
+//Cart Routes:
+const cartRoutes = require('./routes/cart/dynamic');
+app.use('/cart', cartRoutes);
+
+
 //Home Route:
 const homeRoute = require('./routes/home/constant');
 app.use('/', homeRoute);
@@ -83,7 +91,9 @@ app.use('/', homeRoute);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).render('404', { title: 'Page Not Found' });
+  res.status(404).render('404', { title: 'Page Not Found',
+      message: null
+  });
 });
 
 // Connect to MongoDB and start server only after successful connection

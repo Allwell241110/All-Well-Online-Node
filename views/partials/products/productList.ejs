@@ -12,6 +12,10 @@
           <span class="discounted">UGX <%= product.price.toLocaleString() %></span>
         <% } %>
       </p>
+      <a class="edit-link" href="/products/edit/<%=product._id %>">Edit</a>
+      <form action="/products/<%= product._id %>?_method=DELETE" method="POST" style="display:inline;">
+        <button type="submit" class="delete-link">Delete</button>
+      </form>
     </div>
   <% }) %>
 </div>

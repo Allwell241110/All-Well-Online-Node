@@ -5,7 +5,8 @@ module.exports = (req, res, next) => {
 
   const cart = req.session.cart || [];
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // Count distinct items, regardless of quantity
+  const totalItems = cart.length;
 
   res.locals.cart = cart;
   res.locals.cartItemCount = totalItems;

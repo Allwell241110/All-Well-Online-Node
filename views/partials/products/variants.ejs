@@ -1,28 +1,19 @@
-<div id="variant-section">
-  <h3>Product Variants</h3>
+<form id="productForm">
+  <input type="text" name="productName" id="productName" placeholder="Product Name" required>
+  <input type="hidden" id="productId" name="productId"> <!-- Optional hidden field for edit -->
 
-  <div class="variant-group">
-    <label>Variant Name</label>
-    <input type="text" name="variants[0][name]" required>
-
-    <label>Image (optional)</label>
-    <input type="file" name="variants[0][image]" accept="image/*"
-           onchange="handleVariantImagePreview(event, 0)">
-    <div class="image-preview" id="image-preview-0"></div>
-
-    <label>Price (optional)</label>
-    <input type="number" step="0.01" name="variants[0][price]">
-
-    <button type="button" class="remove-variant" onclick="removeVariant(this)">Remove</button>
+  <div id="variant-section">
+    <h3>Product Variants</h3>
+    <button type="button" id="add-variant" onclick="addVariant()">Add Another Variant</button>
   </div>
 
-  <button type="button" id="add-variant" onclick="addVariant()">Add Another Variant</button>
-</div>
+  <button type="submit">Save Product</button>
+</form>
 
 <script>
-  let variantCount = 1;
+  let variantCount = 0;
 
-  function addVariant() {
+  function addVariant(variant = {}) {
     const section = document.getElementById('variant-section');
 
     const container = document.createElement('div');
@@ -30,20 +21,24 @@
     container.innerHTML = `
       <hr>
       <label>Variant Name</label>
-      <input type="text" name="variants[${variantCount}][name]" required>
+      <input type="text" name="variants[${variantCount}][name]" value="${variant.name || ''}" required>
 
       <label>Image (optional)</label>
-      <input type="file" name="variants[${variantCount}][image]" accept="image/*"
+      <input type="file" accept="image/*" name="variants[${variantCount}][image]"
              onchange="handleVariantImagePreview(event, ${variantCount})">
-      <div class="image-preview" id="image-preview-${variantCount}"></div>
+      <div class="image-preview" id="image-preview-${variantCount}">
+        ${variant.imageUrl ? `<div class="image-wrapper">
+          <img src="${variant.imageUrl}" alt="Existing Image">
+          <span class="close-btn" onclick="removeExistingImage(${variantCount})">×</span>
+        </div>` : ''}
+      </div>
 
       <label>Price (optional)</label>
-      <input type="number" step="0.01" name="variants[${variantCount}][price]">
+      <input type="number" step="0.01" name="variants[${variantCount}][price]" value="${variant.price || ''}">
 
       <button type="button" class="remove-variant" onclick="removeVariant(this)">Remove</button>
     `;
 
-    // Insert above the Add Variant button
     const addBtn = document.getElementById('add-variant');
     section.insertBefore(container, addBtn);
 
@@ -62,14 +57,13 @@
 
       const img = document.createElement("img");
       img.src = imgURL;
-      img.alt = "Preview";
 
       const closeBtn = document.createElement("span");
       closeBtn.className = "close-btn";
       closeBtn.textContent = "×";
       closeBtn.onclick = () => {
         previewDiv.innerHTML = "";
-        event.target.value = ""; // clear file input
+        event.target.value = "";
       };
 
       wrapper.appendChild(img);
@@ -81,4 +75,47 @@
   function removeVariant(button) {
     button.parentElement.remove();
   }
+
+  function removeExistingImage(index) {
+    document.getElementById(`image-preview-${index}`).innerHTML = '';
+  }
+
+  // Optional: Populate form if editing an existing product
+  function populateProductForm(product) {
+    document.getElementById('productName').value = product.name || '';
+    document.getElementById('productId').value = product.id || '';
+
+    if (product.variants && product.variants.length) {
+      product.variants.forEach(variant => addVariant(variant));
+    } else {
+      addVariant(); // Add at least one empty by default
+    }
+  }
+
+  // Simulate edit mode:
+  // populateProductForm({
+  //   id: '123',
+  //   name: 'Sample Product',
+  //   variants: [
+  //     { name: 'Small', price: 10.99, imageUrl: 'https://via.placeholder.com/80' },
+  //     { name: 'Large', price: 14.99 }
+  //   ]
+  // });
+
+  document.getElementById('productForm').addEventListener('submit', function (e) {
+    const variantNames = document.querySelectorAll('input[name^="variants"][name$="[name]"]');
+    let valid = true;
+
+    variantNames.forEach((input, index) => {
+      if (!input.value.trim()) {
+        input.style.border = '1px solid red';
+        alert(`Variant ${index + 1} is missing a name.`);
+        valid = false;
+      } else {
+        input.style.border = '';
+      }
+    });
+
+    if (!valid) e.preventDefault();
+  });
 </script>
