@@ -1,0 +1,12 @@
+
+<div class="pending-container">
+  <h2>Your payment is being processed</h2>
+  <p>Please approve the payment on your phone via USSD or mobile app.</p>
+
+  <form action="/checkout/retry-payment" method="POST">
+    <input type="hidden" name="orderId" value="<%= orderId %>">
+    <button type="submit">Retry Payment</button>
+  </form>
+
+  <p>If you’ve already approved the payment, you can <a href="/orders/<%= orderId %>">check your order status</a>.</p>
+</div>

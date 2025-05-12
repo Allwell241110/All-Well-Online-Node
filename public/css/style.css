@@ -1620,4 +1620,82 @@ body {
   background-color: #0056b3;
 }
 
+.pending-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+.pending-container h2 {
+  font-size: 1.8rem;
+  color: #faad14;
+  margin-bottom: 15px;
+}
+.pending-container p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+.pending-container p a {
+  color: #1890ff;
+  text-decoration: underline;
+}
+.pending-container p a:hover {
+  text-decoration: none;
+}
+.pending-container form {
+  margin-bottom: 20px;
+}
+.pending-container form button {
+  background-color: #faad14;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.pending-container form button:hover {
+  background-color: #d48806;
+}
+
+.success-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+.success-container h2 {
+  font-size: 1.8rem;
+  color: #52c41a;
+  margin-bottom: 15px;
+}
+.success-container p {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+.success-container a {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #52c41a;
+  color: #fff;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+.success-container a:hover {
+  background-color: #389e0d;
+}
+
 /*# sourceMappingURL=style.css.map */

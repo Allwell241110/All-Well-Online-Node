@@ -1,12 +1,14 @@
 // momoTokenManager.js
 const axios = require('axios');
-const Redis = require('ioredis');
 
-const redis = new Redis(); // adjust with options if needed
+let cachedToken = null;
+let tokenExpiryTime = 0;
 
 async function getMomoToken() {
-  const cachedToken = await redis.get('momo_token');
-  if (cachedToken) {
+  const now = Date.now();
+
+  // Return the cached token if it's still valid
+  if (cachedToken && now < tokenExpiryTime) {
     return cachedToken;
   }
 
@@ -17,17 +19,17 @@ async function getMomoToken() {
     {
       headers: {
         'Ocp-Apim-Subscription-Key': process.env.MOMO_SUBSCRIPTION_KEY,
-        Authorization: 'Basic ' + Buffer.from(`${process.env.MOMO_UUID_OR_API_USER}:${process.env.MOMO_API_KEY}`).toString('base64'),
+        Authorization: 'Basic ' + Buffer.from(
+          `${process.env.MOMO_UUID_OR_API_USER}:${process.env.MOMO_API_KEY}`
+        ).toString('base64'),
       },
     }
   );
 
-  const accessToken = response.data.access_token;
+  cachedToken = response.data.access_token;
+  tokenExpiryTime = now + 3500 * 1000; // 3500 seconds in milliseconds
 
-  // Set token in Redis with expiry of ~58 mins
-  await redis.set('momo_token', accessToken, 'EX', 3500); // EX sets expiry in seconds
-
-  return accessToken;
+  return cachedToken;
 }
 
 module.exports = { getMomoToken };

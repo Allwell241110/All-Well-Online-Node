@@ -26,7 +26,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ['Pending', 'Paid', 'Unpaid'],
+    enum: ['Pending', 'Paid', 'Unpaid', 'Failed'],
     default: 'Unpaid'
   },
   momoNumber: {
@@ -42,6 +42,24 @@ const orderSchema = new mongoose.Schema({
     enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],
     default: 'Processing'
   },
+  transactions: [
+    {
+      externalId: {
+        type: String,
+        required: true
+      },
+      status: {
+        type: String,
+        enum: ['Pending', 'Successful', 'Failed'],
+        default: 'Pending'
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
+  transactionId: String, // MoMo financialTransactionId (only for successful payment)
   createdAt: {
     type: Date,
     default: Date.now
