@@ -1,42 +1,68 @@
-<main>
-  <section class="product-details">
-    <div class="container">
-      <div class="product-wrapper">
-        <div class="product-images">
-          <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="main-image" />
-          <div class="thumbnail-row">
-            <% product.images.forEach((img, i) => { %>
-              <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" />
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="product-info">
-          <h1><%= product.name %></h1>
-          <p class="brand">Brand: <%= product.brand || 'Unknown' %></p>
-          <div class="price-box">
-            <% if (product.salePrice && product.salePrice < product.price) {
-              const discount = Math.round(((product.price - product.salePrice) / product.price) * 100);
-            %>
-              <span class="sale-price">UGX <%= product.salePrice.toLocaleString() %></span>
-              <span class="original-price">UGX <%= product.price.toLocaleString() %></span>
-              <span class="discount">-<%= discount %>%</span>
-            <% } else { %>
-              <span class="regular-price">UGX <%= product.price.toLocaleString() %></span>
-            <% } %>
-          </div>
-
-          <p class="description"><%= product.description %></p>
-          <p class="stock"><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></p>
-
-          <div class="btn-container">
-            <%- include('../partials/addToCart'), { product } %>
-          </div>
-          
+<section class="product-details">
+  <div class="container">
+    <div class="product-wrapper">
+      <div class="product-images">
+        <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="main-image" />
+        <div class="thumbnail-row">
+          <% product.images.forEach((img, i) => { %>
+            <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" />
+          <% }) %>
         </div>
       </div>
+
+      <div class="product-info">
+        <h1><%= product.name %></h1>
+        <p class="brand">Brand: <%= product.brand || 'Unknown' %></p>
+        <div class="price-box">
+  <% if (product.variants && product.variants.length) {
+    const prices = product.variants.map(v => !isNaN(v.salePrice) ? v.salePrice : v.price);
+    const validPrices = prices.filter(p => !isNaN(p));
+    const min = Math.min(...validPrices);
+    const max = Math.max(...validPrices);
+  %>
+    <span class="variant-price-range">
+      UGX <%= min.toLocaleString() %> 
+      <% if (min !== max) { %>
+        - UGX <%= max.toLocaleString() %>
+      <% } %>
+    </span>
+  <% } else if (product.salePrice && product.salePrice < product.price) {
+    const discount = Math.round(((product.price - product.salePrice) / product.price) * 100);
+  %>
+    <span class="sale-price">UGX <%= product.salePrice.toLocaleString() %></span>
+    <span class="original-price">UGX <%= product.price.toLocaleString() %></span>
+    <span class="discount">-<%= discount %>%</span>
+  <% } else { %>
+    <span class="regular-price">UGX <%= product.price.toLocaleString() %></span>
+  <% } %>
+</div>
+
+        <p class="description"><%= product.description %></p>
+        <% if (!product.variants || !product.variants.length) { %>
+  <p class="stock"><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></p>
+<% } %>
+      </div>
     </div>
-  </section>
+
+    <% if (product.variants && product.variants.length) { %>
+      <%- include('../partials/products/variantsView', { product: product }) %>
+    <% } %>
+
+    <div class="btn-container">
+      <%- include('../partials/addToCart'), { product } %>
+    </div>
+  </div>
+</section>
   
-  <script src="/js/product.js"></script>
-</main>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const mainImage = document.querySelector('.main-image');
+    const thumbnails = document.querySelectorAll('.thumb');
+
+    thumbnails.forEach(thumb => {
+      thumb.addEventListener('click', () => {
+        mainImage.src = thumb.src;
+      });
+    });
+  });
+</script>

@@ -1,23 +1,64 @@
 <div class="product-grid">
-  <% products.forEach(product => { %>
+  <% products.forEach(product => { 
+       const hasVariants = product.variants && product.variants.length > 0;
+       let editUrl = `/products/edit/${product._id}${hasVariants ? '?variants=true' : ''}`;
+
+       let minVariantPrice = null;
+       let maxVariantPrice = null;
+
+       if (hasVariants) {
+         const finalPrices = product.variants.map(v => v.salePrice ?? v.price);
+         minVariantPrice = Math.min(...finalPrices);
+         maxVariantPrice = Math.max(...finalPrices);
+       }
+  %>
     <div class="product-card" data-id="<%= product.name %>">
-      <img src="<%= product.images[0].url %>" alt="<%= product.name %>">
-      <h3><%= product.name %></h3>
-      <p class="price">
-        <% if (product.price !== product.salePrice) { %>
-          <span class="original">UGX <%= product.price.toLocaleString() %></span>
-          <span class="discounted">UGX <%= product.salePrice.toLocaleString() %></span>
-          <span class="percent">(-<%= Math.round((product.price - product.salePrice) / product.price * 100) %>%)</span>
-        <% } else { %>
-          <span class="discounted">UGX <%= product.price.toLocaleString() %></span>
-        <% } %>
-      </p>
-      <a class="edit-link" href="/products/edit/<%=product._id %>">Edit</a>
-      <form action="/products/<%= product._id %>?_method=DELETE" method="POST" style="display:inline;">
-        <button type="submit" class="delete-link">Delete</button>
-      </form>
-    </div>
+  <% if (product.images && product.images.length > 0) { %>
+    <img src="<%= product.images[0].url %>" alt="<%= product.name %>">
+  <% } else { %>
+    <img src="/images/placeholder.png" alt="No Image Available">
+  <% } %>
+
+  <h3><%= product.name %></h3>
+  <p class="price">
+    <% if (hasVariants) { %>
+      <% if (minVariantPrice !== maxVariantPrice) { %>
+        <span class="discounted">UGX <%= minVariantPrice.toLocaleString() %> - UGX <%= maxVariantPrice.toLocaleString() %></span>
+      <% } else { %>
+        <span class="discounted">UGX <%= minVariantPrice.toLocaleString() %></span>
+      <% } %>
+    <% } else { %>
+      <% if (product.price !== product.salePrice) { %>
+        <span class="original">UGX <%= product.price.toLocaleString() %></span>
+        <span class="discounted">UGX <%= product.salePrice.toLocaleString() %></span>
+        <span class="percent">(-<%= Math.round((product.price - product.salePrice) / product.price * 100) %>%)</span>
+      <% } else { %>
+        <span class="discounted">UGX <%= product.price.toLocaleString() %></span>
+      <% } %>
+    <% } %>
+  </p>
+
+  <% if (user && user.role === 'admin') { %>
+    <a class="edit-link" href="<%= editUrl %>">Edit</a>
+    <form action="/products/<%= product._id %>?_method=DELETE" method="POST" style="display:inline;">
+      <button type="submit" class="delete-link">Delete</button>
+    </form>
+  <% } %>
+</div>
   <% }) %>
 </div>
 
-<script src="/js/productList.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const productCards = document.querySelectorAll(".product-card");
+
+    productCards.forEach(card => {
+      card.addEventListener("click", () => {
+        const productName = card.getAttribute("data-id");
+        if (productName) {
+          window.location.href = `/products/${productName}`;
+        }
+      });
+    });
+  });
+</script>

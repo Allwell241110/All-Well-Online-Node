@@ -1,20 +1,64 @@
+<!-- 
+  Expected input data from backend:
+    - product (optional): The product object if editing; undefined/null if creating a new product.
+    - editing: Boolean (true for editing, false for creating a new product).
+    - metaCategories: Array of meta category objects (each { _id, name }).
+    - mainCategories: Array of main category objects (each { _id, name, meta }).
+    - subCategories: Array of sub category objects (each { _id, name, main }).
+
+  Fields provided by this form on submission:
+    - productId: Hidden input (only populated if editing).
+    - newImages: input[type="file"], multiple. New images uploaded by the user.
+    - existingImages[]: Hidden inputs holding URLs of kept existing images.
+    - removedImages[]: Hidden inputs holding URLs of images the user chose to delete.
+    - metaCategoryId: Selected meta category ID.
+    - mainCategoryId: Selected main category ID.
+    - subCategoryId: Selected sub category ID.
+    - name: Product name (text input).
+    - description: Product description (textarea).
+    - price: Product price (number input).
+    - salePrice: Sale price if applicable (optional number input).
+    - brand: Brand name (text input).
+    - stock: Stock quantity (number input).
+
+  Variant fields submitted as an array of objects:
+    - variants[0][name]   // (required) Name of the first variant
+    - variants[0][price]  // (optional) Price of the first variant
+    - variants[0][image]  // (optional) Image URL or path of the first variant
+
+    - variants[1][name]   // (required) Name of the second variant
+    - variants[1][price]  // (optional) Price of the second variant
+    - variants[1][image]  // (optional) Image URL or path of the second variant
+
+    - ...and so on for each additional variant.
+-->
+
 <div class="add-product-form">
   <div>
-    <h1><%= product ? 'Edit Product' : 'Create a New Product' %></h1>
-    <form id="productForm">
+    <h1><%= editing ? 'Edit Product' : 'Create a New Product' %></h1>
+
+    <form id="productForm" enctype="multipart/form-data">
 
       <!-- Hidden product ID (for edit mode) -->
-      <input type="hidden" id="productId" name="productId" value="<%= product?._id || '' %>" />
+      <% if (editing && product?._id) { %>
+        <input type="hidden" id="productId" name="productId" value="<%= product._id %>" />
+      <% } %>
 
       <!-- Image Uploader Partial -->
-      <%- include('../partials/products/imageUploader', { images: product?.images || [] }) %>
+      <%- include('../partials/products/imageUploader', { 
+        images: product?.images || [], 
+        editing 
+      }) %>
 
       <!-- Category Selector Partial -->
       <%- include('../partials/categories/select', {
         metaCategories,
         mainCategories,
         subCategories,
-        selectedSubCategoryId: product?.subCategory?._id || ''
+        editing,
+        selectedMeta: product?.metaCategory?._id || '',
+        selectedMain: product?.mainCategory?._id || '',
+        selectedSub: product?.subCategory?._id || ''
       }) %>
 
       <div>
@@ -27,149 +71,94 @@
         <textarea id="description" name="description" required><%= product?.description || '' %></textarea>
       </div>
 
-      <div>
-        <label for="price">Price:</label>
-        <input type="number" id="price" name="price" value="<%= product?.price || '' %>" required />
-      </div>
+      <% if (!variants) { %>
+          <div>
+    <label for="price">Price:</label>
+    <input type="number" id="price" name="price" value="<%= product?.price || '' %>" required />
+  </div>
 
-      <div>
-        <label for="salePrice">Sale Price (optional):</label>
-        <input type="number" id="salePrice" name="salePrice" value="<%= product?.salePrice || '' %>" />
-      </div>
+          <div>
+    <label for="salePrice">Sale Price:</label>
+    <input type="number" id="salePrice" name="salePrice" value="<%= product?.salePrice || '' %>" required />
+  </div>
+
+          <div>
+    <label for="stock">Stock Quantity:</label>
+    <input type="number" id="stock" name="stock" value="<%= product?.stock || '' %>" required />
+  </div>
+      <% } %>
 
       <div>
         <label for="brand">Brand:</label>
         <input type="text" id="brand" name="brand" value="<%= product?.brand || '' %>" required />
       </div>
 
-      <div>
-        <label for="stock">Stock Quantity:</label>
-        <input type="number" id="stock" name="stock" value="<%= product?.stock || '' %>" required />
-      </div>
-
       <!-- Variant Partial -->
-      <%- include('../partials/products/variants', { variants: product?.variants || [] }) %>
+      <% if (variants) { %>
+        <%- include('../partials/products/variants', { 
+            variants: product?.variants || [], 
+            editing 
+        }) %>
+      <% } %>
 
       <button id="submit-button" type="submit">
-        <%= product ? 'Update Product' : 'Create Product' %>
+        <%= editing ? 'Update Product' : 'Create Product' %>
       </button>
     </form>
   </div>
 </div>
 
 <script>
-document.getElementById('productForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+  const productForm = document.getElementById('productForm');
 
-  const submitButton = document.getElementById('submit-button');
-  submitButton.disabled = true;
+  // Check if the form has a hidden input for the productId (indicating that we're editing)
+  const productId = document.querySelector('input[name="productId"]')?.value;
 
-  const productId = document.getElementById('productId').value;
-  const isEditMode = !!productId;
+  // Define the route dynamically based on whether editing or creating
+  const route = editing ? `/products/${productId}` : '/products';
+  
+  // Handle form submission
+  productForm.addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent default form submission
 
-  const productName = document.getElementById('name').value.trim();
-  const productDescription = document.getElementById('description').value.trim();
-  const productPrice = document.getElementById('price').value;
-  const productSalePrice = document.getElementById('salePrice').value;
-  const productBrand = document.getElementById('brand').value.trim();
-  const productStock = document.getElementById('stock').value;
-
-  const errors = [];
-
-  if (!productName) errors.push('Product name is required.');
-  if (!productDescription) errors.push('Product description is required.');
-  if (!productPrice) errors.push('Product price is required.');
-  if (!productBrand) errors.push('Product brand is required.');
-  if (!productStock) errors.push('Stock quantity is required.');
-  if (!Array.isArray(window.selectedImages) || window.selectedImages.length === 0) {
-    errors.push('At least one product image is required.');
-  }
-
-  if (errors.length > 0) {
-    alert('Please fix the following errors:\n\n' + errors.join('\n'));
-    submitButton.disabled = false;
-    return;
-  }
-
-  function collectVariants() {
-    const variantGroups = document.querySelectorAll('.variant-group');
-    const variants = [];
-    window.variantImageMap = {};
-
-    variantGroups.forEach((group, index) => {
-      const nameInput = group.querySelector('input[name*="[name]"]');
-      const priceInput = group.querySelector('input[name*="[price]"]');
-      const imageInput = group.querySelector('input[name*="[image]"]');
-
-      const name = nameInput?.value.trim();
-      const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
-      const file = imageInput?.files[0];
-
-      if (price || file) {
-        if (!name) {
-          throw new Error(`Variant name is required if price or image is provided (Variant #${index + 1}).`);
-        }
-      }
-
-      if (name) {
-        variants.push({
-          name,
-          priceAdjustment: price,
-          imageField: file ? `variantImage_${index}` : null
-        });
-
-        if (file) {
-          window.variantImageMap[`variantImage_${index}`] = file;
-        }
-      }
-    });
-
-    window.variants = variants;
-  }
-
-  try {
-    await collectVariants();
-  } catch (err) {
-    alert(err.message || 'Error while processing variants.');
-    submitButton.disabled = false;
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('productName', productName);
-  formData.append('productDescription', productDescription);
-  formData.append('productPrice', productPrice);
-  formData.append('productSalePrice', productSalePrice);
-  formData.append('productBrand', productBrand);
-  formData.append('productStock', productStock);
-  formData.append('subCatId', window.subCatId || '');
-  formData.append('variants', JSON.stringify(window.variants || []));
-
-  window.selectedImages.forEach(file => {
-    formData.append('images', file);
+    // Collect form data, including new images and removed images
+    const formData = new FormData(productForm);
+    if (Array.isArray(window.removedExistingURLs) && window.removedExistingURLs.length > 0) {
+  window.removedExistingURLs.forEach((url) => {
+    formData.append('removedImages[]', url);
   });
+}
 
-  for (const [fieldName, file] of Object.entries(window.variantImageMap)) {
-    formData.append(fieldName, file);
-  }
+    try {
+      const response = await fetch(route, {
+        method: editing ? 'PUT' : 'POST', // Use PUT for editing, POST for new product
+        body: formData,
+      });
 
-  try {
-    const res = await fetch(isEditMode ? `/products/${productId}` : '/products', {
-      method: isEditMode ? 'PUT' : 'POST',
-      body: formData
-    });
-
-    const result = await res.json();
-    if (res.ok) {
-      alert(isEditMode ? 'Product updated successfully!' : 'Product uploaded successfully!');
-      window.location.href = '/products';
-    } else {
-      throw new Error(result.message || 'Operation failed.');
+      if (response.ok) {
+        const result = await response.json();
+        alert('Product saved successfully!');
+        window.location.href = '/products'; // Redirect to product listing page
+      } else {
+        const error = await response.json();
+        alert('Error: ' + (error.message || 'Something went wrong.'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting the form.');
     }
-  } catch (err) {
-    alert('Error: ' + (err.message || 'Something went wrong.'));
-  } finally {
-    submitButton.disabled = false;
-  }
-});
+  });
 </script>
+
+<!-- 
+Main form fields (exclusive of partials):
+
+- productId (hidden, only if editing)
+- name (Product Name) - input[type="text"]
+- description (Product Description) - textarea
+- price (Price) - input[type="number"]
+- salePrice (Sale Price, optional) - input[type="number"]
+- brand (Brand Name) - input[type="text"]
+- stock (Stock Quantity) - input[type="number"]
+
+-->

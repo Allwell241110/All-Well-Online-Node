@@ -1,0 +1,46 @@
+<section class="product-variants">
+  <h2>Variants</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Image</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Stock Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (product.variants && product.variants.length) { %>
+        <% product.variants.forEach(function(variant) { 
+             const hasSale = variant.salePrice && variant.salePrice < variant.price;
+             const discount = hasSale ? Math.round(((variant.price - variant.salePrice) / variant.price) * 100) : 0;
+        %>
+          <tr>
+            <td>
+              <% if (variant.image && variant.image.url) { %>
+                <img src="<%= variant.image.url %>" alt="<%= variant.name %>" class="variant-image">
+              <% } %>
+            </td>
+            <td><%= variant.name %></td>
+            <td>
+              <% if (hasSale) { %>
+                <span style="text-decoration: line-through; color: #999;">UGX <%= variant.price.toLocaleString() %></span><br>
+                <span style="font-weight: bold; color: #e60000;">UGX <%= variant.salePrice.toLocaleString() %></span>
+                <span style="background: #e60000; color: white; padding: 2px 5px; font-size: 0.75rem; border-radius: 4px;">-<%= discount %>%</span>
+              <% } else { %>
+                <span style="font-weight: bold;">UGX <%= variant.price.toLocaleString() %></span>
+              <% } %>
+            </td>
+            <td>
+              <%= variant.stock > 0 ? 'In stock' : 'Out of stock' %>
+            </td>
+          </tr>
+        <% }); %>
+      <% } else { %>
+        <tr>
+          <td colspan="4">No variants available</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</section>

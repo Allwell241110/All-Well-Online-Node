@@ -1,0 +1,24 @@
+
+<fieldset class="delivery-address-form border p-3 rounded">
+  <legend class="w-auto px-2">Delivery Address</legend>
+
+  <div class="form-group">
+  <label for="district-input">District</label>
+  <input list="districts" name="deliveryAddress[district]" id="district-input" required>
+  <datalist id="districts">
+    <% districts.forEach(function(district) { %>
+      <option value="<%= district.name %>">
+    <% }); %>
+  </datalist>
+</div>
+
+  <div class="form-group">
+    <label for="village">Village/City</label>
+    <input type="text" name="deliveryAddress[village]" id="village" required>
+  </div>
+
+  <div class="form-group">
+    <label for="street">Street</label>
+    <input type="text" name="deliveryAddress[street]" id="street"  required>
+  </div>
+</fieldset>

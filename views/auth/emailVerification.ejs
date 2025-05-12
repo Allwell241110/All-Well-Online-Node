@@ -1,0 +1,27 @@
+<div class="verify-email">
+  <p>Please enter the verification code sent to your email.</p>
+
+  <% if (message) { %>
+    <p class="message"><%= message %></p>
+  <% } %>
+
+  <% if (error) { %>
+    <p class="error"><%= error %></p>
+  <% } %>
+
+  <form action="/auth/verify-email" method="POST">
+    <!-- Include the user's email (if not using session) -->
+    <input type="hidden" name="email" value="<%= user?.email || '' %>">
+
+    <label for="code">Verification Code</label>
+    <input type="text" name="code" id="code" required>
+
+    <button type="submit">Verify Email</button>
+  </form>
+
+  <form action="/auth/resend-verification" method="POST">
+    <!-- Optional: include email again -->
+    <input type="hidden" name="email" value="<%= user?.email || '' %>">
+    <button type="submit">Resend Verification Email</button>
+  </form>
+</div>

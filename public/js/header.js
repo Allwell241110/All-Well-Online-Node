@@ -1,21 +1,29 @@
-  //Hamburger Menue
- function toggleMenu() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
+// Get elements
+const hamburgerMenu = document.querySelector('.hamburger');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+
+// Toggle Sidebar and Overlay visibility
+function toggleMenu() {
+  sidebar.classList.toggle('active');
+  overlay.classList.toggle('active');
 }
+
+// Close Sidebar when Overlay is clicked
 function closeMenu() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
-} 
+  sidebar.classList.remove('active');
+  overlay.classList.remove('active');
+}
 
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
 
-//Search Bar:
-  document.getElementById('searchForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // prevent form from submitting normally
-    const query = document.getElementById('searchInput').value.trim();
+  searchForm.addEventListener('submit', function (e) {
+    e.preventDefault(); // Prevent page reload
 
-    if (query) {
-      // redirect to search results page
-      window.location.href = `/products?search=${encodeURIComponent(query)}`;
-    }
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    // Redirect to /products?search=query
+    window.location.href = `/products?search=${encodeURIComponent(query)}`;
   });

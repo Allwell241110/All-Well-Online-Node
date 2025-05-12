@@ -1,0 +1,16 @@
+<!-- login.ejs -->
+<form class="login-form" action="/auth/login" method="POST">
+  <!-- Data sent: redirectTo, email, password -->
+  <input type="hidden" name="redirectTo" value="<%= originalUrl %>">
+  <input type="email" name="email" placeholder="Email" required />
+  <input type="password" name="password" placeholder="Password" required />
+  <% if (error) { %>
+    <p class="error"><%= error %></p> <!-- Data received: error message -->
+  <% } %>
+  <% if (message) { %>
+    <p class="message"><%= message %></p> <!-- Data received: message -->
+  <% } %>
+  <button type="submit">Login</button>
+  <a href="/auth/forgot-password">Forgot password?</a>
+  <a href="/auth/sign-up" >Sign Up</a>
+</form>

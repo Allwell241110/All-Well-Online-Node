@@ -1,0 +1,46 @@
+<div class="payment-method-container">
+  <h2>Select Payment Method</h2>
+
+  <p>
+    Delivering to: <strong><%= district %></strong><br>
+    <% if (allowCOD) { %>
+      Cash on Delivery is available.
+    <% } else { %>
+      Only online payment is available for this location.
+    <% } %>
+  </p>
+
+  <% 
+    let deliveryFee = 10000;
+    if (allowCOD) {
+      if (district === 'Kampala') deliveryFee = 5000;
+      else if (district === 'Wakiso') deliveryFee = 7500;
+    }
+  %>
+
+  <p>
+    <strong>Delivery Fee:</strong> UGX <%= deliveryFee.toLocaleString() %>
+  </p>
+
+  <form action="/checkout/confirm" method="POST">
+    <input type="hidden" name="deliveryFee" value="<%= deliveryFee %>">
+
+    <div class="form-group">
+      <label>
+        <input type="radio" name="paymentMethod" value="prepaid" required>
+        Pay Online
+      </label>
+    </div>
+
+    <% if (allowCOD) { %>
+      <div class="form-group">
+        <label>
+          <input type="radio" name="paymentMethod" value="cod">
+          Cash on Delivery
+        </label>
+      </div>
+    <% } %>
+
+    <button type="submit">Proceed to Confirmation</button>
+  </form>
+</div>

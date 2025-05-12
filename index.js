@@ -7,22 +7,15 @@ const morgan = require('morgan');
 const session = require('express-session');
 const expressLayouts = require('express-ejs-layouts');
 
-const locals = require('./devUniversalData/locals');
 const cartMiddleware = require('./middleware/cartMiddleware');
 const methodOverride = require('method-override');
+const MongoStore = require('connect-mongo');
+const seedAdmin = require('./config/admin/admin-config');
 
 // Load env variables
 dotenv.config();
 
 const app = express();
-
-// Assign all local variables
-app.locals.user = locals.user;
-
-
-
-
-
 
 
 // Middleware
@@ -31,10 +24,21 @@ app.use(bodyParser.json());
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-  secret: 'ecommerceSecretKey',
+  secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day
 }));
+app.use((req, res, next) => {
+  res.locals.user = req.session.user;
+  next();
+});
+
+app.use((req, res, next) => {
+  res.locals.originalUrl = req.originalUrl;
+  next();
+});
 
 app.use(methodOverride('_method'));
 
@@ -81,6 +85,16 @@ app.use('/products', dynamicProductRoutes);
 const cartRoutes = require('./routes/cart/dynamic');
 app.use('/cart', cartRoutes);
 
+//Auth routes:
+const staticAuthRoutes = require('./routes/auth/static');
+app.use('/auth', staticAuthRoutes);
+const dynamicAuthRoutes = require('./routes/auth/dynamic');
+app.use('/auth', dynamicAuthRoutes);
+
+//Checkout routes:
+const checkoutRoutes = require('./routes/checkout/checkout');
+app.use('/checkout', checkoutRoutes);
+
 
 //Home Route:
 const homeRoute = require('./routes/home/constant');
@@ -99,8 +113,10 @@ app.use((req, res) => {
 // Connect to MongoDB and start server only after successful connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-  console.log('✅ MongoDB connected');
-
+    console.log('✅ MongoDB connected');
+    seedAdmin();
+  })
+  .then(() => {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);

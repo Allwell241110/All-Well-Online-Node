@@ -5,24 +5,38 @@ const MetaCategory = require('../../models/MetaCategory');
 const MainCategory = require('../../models/MainCategory');
 const SubCategory = require('../../models/SubCategory');
 
+
+router.get('/product-nature', (req, res) => {
+
+  res.render('products/productNature', {
+
+    title: 'Product Nature'
+  });
+});
+
 router.get('/add-product', async (req, res) => {
+  const variants = req.query.variants === 'true';
   try {
     const metaCategories = await MetaCategory.find();
     const mainCategories = await MainCategory.find();
     const subCategories = await SubCategory.find();
-    console.log(metaCategories, mainCategories, subCategories);
 
     res.render('products/addProductForm', {
       metaCategories,
       mainCategories,
       subCategories,
-      title: 'Create Product'
+      title: 'Create Product',
+      product: null,
+      editing: false,
+      variants
     });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error loading categories');
   }
 });
+
+
 
 
 

@@ -1,121 +1,122 @@
-<form id="productForm">
-  <input type="text" name="productName" id="productName" placeholder="Product Name" required>
-  <input type="hidden" id="productId" name="productId"> <!-- Optional hidden field for edit -->
+<%
+// Expected backend variables:
 
-  <div id="variant-section">
-    <h3>Product Variants</h3>
-    <button type="button" id="add-variant" onclick="addVariant()">Add Another Variant</button>
+// editing: Boolean
+// Indicates if this is an edit form
+
+// variants: Optional array of variant objects (only if editing is true)
+// Each object should have: { name: String, priceAdjustment?: Number, image?: String }
+%>
+
+
+
+<%
+  // Expected backend variables
+  // - editing: Boolean
+  // - variants: Optional array of objects like { name: String, priceAdjustment?: Number, image?: String }
+  %>
+  
+  <%
+// Expected backend variables:
+// - editing: Boolean
+// - variants: Optional array of objects like { name: String, priceAdjustment?: Number, image?: String }
+%>
+
+<div id="variant-section">
+  <label>Product Variants</label>
+  <div id="variant-list">
+    <% if (editing && variants && variants.length) { %>
+      <% variants.forEach((variant, index) => { %>
+        <div class="variant-item" data-index="<%= index %>">
+          <input type="text" name="variants[<%= index %>][name]" value="<%= variant.name %>" placeholder="Variant Name" required>
+          <input type="number" step="0.01" name="variants[<%= index %>][price]" value="<%= variant.price %>" placeholder="Price" required>
+          <input type="number" step="0.01" name="variants[<%= index %>][salePrice]" value="<%= variant.salePrice %>" placeholder="Sale Price" required>
+          <input type="number" name="variants[<%= index %>][stock]" value="<%= variant.stock || '' %>" placeholder="Stock Quantity" required>
+
+          <% if (variant.image.url) { %>
+            <div class="image-preview">
+              <img src="<%= variant.image.url %>" alt="Variant Image">
+              <button type="button" class="remove-image-btn" onclick="removeImage(<%= index %>, '<%= variant.image.url %>')">×</button>
+              <input type="hidden" name="variants[<%= index %>][removedImage]" id="removed-image-<%= index %>">
+            </div>
+          <% } else { %>
+            <input type="file" name="variantImage_<%= index %>" accept="image/*">
+          <% } %>
+
+          <button type="button" class="remove-variant-btn" onclick="removeVariant(this)">Remove Variant</button>
+        </div>
+      <% }); %>
+    <% } else { %>
+      <div class="variant-item" data-index="0">
+        <input type="text" name="variants[0][name]" placeholder="Variant Name" required>
+        <input type="number" step="0.01" name="variants[0][price]" placeholder="Price" required>
+        <input type="number" step="0.01" name="variants[0][salePrice]" placeholder="Sale Price" required>
+        <input type="number" name="variants[0][stock]" placeholder="Stock Quantity" required>
+        <input type="file" name="variantImage_0" accept="image/*">
+        <button type="button" class="remove-variant-btn" onclick="removeVariant(this)">Remove Variant</button>
+      </div>
+    <% } %>
   </div>
 
-  <button type="submit">Save Product</button>
-</form>
+  <button type="button" onclick="addVariant(<%= editing ? 'true' : 'false' %>)">Add Another Variant</button>
+</div>
 
 <script>
-  let variantCount = 0;
+  let variantIndex = <%= editing && variants ? variants.length : 1 %>;
 
-  function addVariant(variant = {}) {
-    const section = document.getElementById('variant-section');
+  function addVariant(isEditing) {
+    const list = document.getElementById('variant-list');
+    const item = document.createElement('div');
+    item.className = 'variant-item';
+    item.dataset.index = variantIndex;
 
-    const container = document.createElement('div');
-    container.className = 'variant-group';
-    container.innerHTML = `
-      <hr>
-      <label>Variant Name</label>
-      <input type="text" name="variants[${variantCount}][name]" value="${variant.name || ''}" required>
-
-      <label>Image (optional)</label>
-      <input type="file" accept="image/*" name="variants[${variantCount}][image]"
-             onchange="handleVariantImagePreview(event, ${variantCount})">
-      <div class="image-preview" id="image-preview-${variantCount}">
-        ${variant.imageUrl ? `<div class="image-wrapper">
-          <img src="${variant.imageUrl}" alt="Existing Image">
-          <span class="close-btn" onclick="removeExistingImage(${variantCount})">×</span>
-        </div>` : ''}
-      </div>
-
-      <label>Price (optional)</label>
-      <input type="number" step="0.01" name="variants[${variantCount}][price]" value="${variant.price || ''}">
-
-      <button type="button" class="remove-variant" onclick="removeVariant(this)">Remove</button>
+    let inner = `
+      <input type="text" name="variants[${variantIndex}][name]" placeholder="Variant Name" required>
+      <input type="number" step="0.01" name="variants[${variantIndex}][price]" placeholder="Price" required>
+      <input type="number" step="0.01" name="variants[${variantIndex}][salePrice]" placeholder="Sale Price" required>
+      <input type="number" name="variants[${variantIndex}][stock]" placeholder="Stock Quantity" required>
+      <input type="file" name="variantImage_${variantIndex}" accept="image/*">
+      <button type="button" class="remove-variant-btn" onclick="removeVariant(this)">Remove Variant</button>
     `;
 
-    const addBtn = document.getElementById('add-variant');
-    section.insertBefore(container, addBtn);
-
-    variantCount++;
-  }
-
-  function handleVariantImagePreview(event, index) {
-    const previewDiv = document.getElementById(`image-preview-${index}`);
-    previewDiv.innerHTML = "";
-
-    const file = event.target.files[0];
-    if (file) {
-      const imgURL = URL.createObjectURL(file);
-      const wrapper = document.createElement("div");
-      wrapper.className = "image-wrapper";
-
-      const img = document.createElement("img");
-      img.src = imgURL;
-
-      const closeBtn = document.createElement("span");
-      closeBtn.className = "close-btn";
-      closeBtn.textContent = "×";
-      closeBtn.onclick = () => {
-        previewDiv.innerHTML = "";
-        event.target.value = "";
-      };
-
-      wrapper.appendChild(img);
-      wrapper.appendChild(closeBtn);
-      previewDiv.appendChild(wrapper);
-    }
+    item.innerHTML = inner;
+    list.appendChild(item);
+    variantIndex++;
   }
 
   function removeVariant(button) {
-    button.parentElement.remove();
+    const item = button.closest('.variant-item');
+    if (item) item.remove();
   }
 
-  function removeExistingImage(index) {
-    document.getElementById(`image-preview-${index}`).innerHTML = '';
+  function removeImage(index, imageUrl) {
+    const variantItem = document.querySelector(`.variant-item[data-index="${index}"]`);
+    const preview = variantItem.querySelector('.image-preview');
+    if (preview) preview.remove();
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.name = `variantImage_${index}`;
+    fileInput.accept = 'image/*';
+
+    const removeBtn = variantItem.querySelector('.remove-variant-btn');
+    variantItem.insertBefore(fileInput, removeBtn);
+
+    const hiddenInput = document.getElementById(`removed-image-${index}`);
+    if (hiddenInput) hiddenInput.value = imageUrl;
   }
-
-  // Optional: Populate form if editing an existing product
-  function populateProductForm(product) {
-    document.getElementById('productName').value = product.name || '';
-    document.getElementById('productId').value = product.id || '';
-
-    if (product.variants && product.variants.length) {
-      product.variants.forEach(variant => addVariant(variant));
-    } else {
-      addVariant(); // Add at least one empty by default
-    }
-  }
-
-  // Simulate edit mode:
-  // populateProductForm({
-  //   id: '123',
-  //   name: 'Sample Product',
-  //   variants: [
-  //     { name: 'Small', price: 10.99, imageUrl: 'https://via.placeholder.com/80' },
-  //     { name: 'Large', price: 14.99 }
-  //   ]
-  // });
-
-  document.getElementById('productForm').addEventListener('submit', function (e) {
-    const variantNames = document.querySelectorAll('input[name^="variants"][name$="[name]"]');
-    let valid = true;
-
-    variantNames.forEach((input, index) => {
-      if (!input.value.trim()) {
-        input.style.border = '1px solid red';
-        alert(`Variant ${index + 1} is missing a name.`);
-        valid = false;
-      } else {
-        input.style.border = '';
-      }
-    });
-
-    if (!valid) e.preventDefault();
-  });
 </script>
+  
+<%
+  //This variant partial submits the following field names as an array of objects:
+  
+  //variants[0][name]   // (required) Name of the first variant
+  //variants[0][priceAdjustment]  // (optional) Price of the first variant
+  //variants[0][image]  // (optional) Image URL or path of the first variant
+
+  //variants[1][name]   // Name of the second variant
+  //variants[1][priceAdjustment]
+  //variants[1][image]
+
+  //...and so on for each added variant.
+%>

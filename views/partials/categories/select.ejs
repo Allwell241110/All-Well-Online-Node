@@ -1,102 +1,149 @@
-<div class="category-selectors">
+<%
+//Product
+
+// Required data passed from the backend to render this category selection partial:
+
+// metaCategories: Array of meta category objects.
+// Each object should have: { _id: String, name: String }
+
+
+// mainCategories: Array of main category objects.
+// Each object should have: { _id: String, name: String, meta: String }
+// 'meta' is the _id of the parent meta category.
+
+
+// subCategories: Array of sub category objects.
+// Each object should have: { _id: String, name: String, main: String }
+// 'main' is the _id of the parent main category.
+
+  
+// editing: Boolean
+// true if the form is in edit mode; false if it's in create mode
+%>
+
+<div class="category-selectors" 
+     data-editing="<%= editing %>" 
+     data-product='<%- JSON.stringify(product || {}) %>' 
+     data-meta='<%- JSON.stringify(metaCategories) %>' 
+     data-main='<%- JSON.stringify(mainCategories) %>' 
+     data-sub='<%- JSON.stringify(subCategories) %>'>
+
+  <!-- Meta Category -->
   <div class="form-group">
     <label for="metaCategory">Meta Category:</label>
-    <select id="metaCategory" class="select-meta" required>
+    <select id="metaCategory" class="select-meta" name="metaCategoryId" required>
       <option value="">-- Select Meta Category --</option>
       <% metaCategories.forEach(meta => { %>
         <option value="<%= meta._id %>"><%= meta.name %></option>
-      <% }); %>
+      <% }) %>
     </select>
   </div>
 
+  <!-- Main Category -->
   <div class="form-group">
     <label for="mainCategory">Main Category:</label>
-    <select id="mainCategory" class="select-main" required disabled>
+    <select id="mainCategory" class="select-main" name="mainCategoryId" required disabled>
       <option value="">-- Select Main Category --</option>
-      <% mainCategories.forEach(main => { %>
-        <option value="<%= main._id %>" data-meta="<%= main.meta %>"><%= main.name %></option>
-      <% }); %>
     </select>
   </div>
 
+  <!-- Sub Category -->
   <div class="form-group">
     <label for="subCategory">Sub Category:</label>
     <select id="subCategory" class="select-sub" name="subCategoryId" required disabled>
       <option value="">-- Select Sub Category --</option>
-      <% subCategories.forEach(sub => { %>
-        <option value="<%= sub._id %>" 
-                data-main="<%= sub.main %>" 
-                data-meta="<%= sub.meta %>" 
-                <%= selectedSubCategoryId === sub._id.toString() ? 'selected' : '' %>>
-          <%= sub.name %>
-        </option>
-      <% }); %>
     </select>
   </div>
 </div>
 
 <script>
-  const metaSelect = document.querySelector('.select-meta');
-  const mainSelect = document.querySelector('.select-main');
-  const subSelect = document.querySelector('.select-sub');
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('.category-selectors');
+    if (!container) return;
 
-  const mainOptions = Array.from(mainSelect.options);
-  const subOptions = Array.from(subSelect.options);
+    const isEditing = container.dataset.editing === 'true';
+    const product = JSON.parse(container.dataset.product || '{}');
+    const metaCategories = JSON.parse(container.dataset.meta || '[]');
+    const mainCategories = JSON.parse(container.dataset.main || '[]');
+    const subCategories = JSON.parse(container.dataset.sub || '[]');
 
-  function filterOptions(select, attr, value) {
-    Array.from(select.options).forEach(option => {
-      if (!option.value) return;
-      option.style.display = option.dataset[attr] === value ? 'block' : 'none';
+    const metaSelect = container.querySelector('.select-meta');
+    const mainSelect = container.querySelector('.select-main');
+    const subSelect = container.querySelector('.select-sub');
+
+    function populateSelect(selectEl, options, matchKey, selectedId) {
+      selectEl.innerHTML = `<option value="">-- Select ${selectEl.id.replace(/([A-Z])/g, ' $1')} --</option>`;
+      options.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option._id;
+        opt.textContent = option.name;
+        if (option._id === selectedId) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+      selectEl.disabled = options.length === 0;
+    }
+
+    function updateMain(metaId, selectedMainId = '') {
+      const filtered = mainCategories.filter(main => String(main.meta) === String(metaId));
+      populateSelect(mainSelect, filtered, 'meta', selectedMainId);
+    }
+
+    function updateSub(mainId, selectedSubId = '') {
+      const filtered = subCategories.filter(sub => String(sub.main) === String(mainId));
+      populateSelect(subSelect, filtered, 'main', selectedSubId);
+    }
+
+    metaSelect.addEventListener('change', () => {
+      const metaId = metaSelect.value;
+      updateMain(metaId);
+      subSelect.innerHTML = `<option value="">-- Select Sub Category --</option>`;
+      subSelect.disabled = true;
     });
-    select.value = '';
-  }
 
-  metaSelect.addEventListener('change', () => {
-    const selectedMeta = metaSelect.value;
-    if (selectedMeta) {
-      mainSelect.disabled = false;
-      filterOptions(mainSelect, 'meta', selectedMeta);
-      subSelect.disabled = true;
-      subSelect.value = '';
-    } else {
-      mainSelect.disabled = true;
-      mainSelect.value = '';
-      subSelect.disabled = true;
-      subSelect.value = '';
-    }
-  });
+    mainSelect.addEventListener('change', () => {
+      const mainId = mainSelect.value;
+      updateSub(mainId);
+    });
 
-  mainSelect.addEventListener('change', () => {
-    const selectedMain = mainSelect.value;
-    if (selectedMain) {
-      subSelect.disabled = false;
-      filterOptions(subSelect, 'main', selectedMain);
-    } else {
-      subSelect.disabled = true;
-      subSelect.value = '';
-    }
-  });
+    // Debugging logs
+    console.log('Editing Mode:', isEditing);
+    console.log('Product:', product);
+    console.log('Meta Categories:', metaCategories);
+    console.log('Main Categories:', mainCategories);
+    console.log('Sub Categories:', subCategories);
 
-  // Auto-fill logic for edit mode
-  const selectedSub = subSelect.querySelector('option:checked');
-  if (selectedSub) {
-    const selectedMainId = selectedSub.dataset.main;
-    const selectedMetaId = selectedSub.dataset.meta;
+    if (isEditing && product?.category) {
+      // Support both string ID or object with _id
+      const categoryId = typeof product.category === 'string' ? product.category : product.category._id;
+      console.log('Category ID:', categoryId);
 
-    // Pre-fill main & meta
-    metaSelect.value = selectedMetaId;
-    mainSelect.disabled = false;
-    filterOptions(mainSelect, 'meta', selectedMetaId);
-    mainSelect.value = selectedMainId;
+      const selectedSub = subCategories.find(sub => sub._id === categoryId);
+      console.log('Selected Sub Category:', selectedSub);
 
-    subSelect.disabled = false;
-    filterOptions(subSelect, 'main', selectedMainId);
-  }
+      const selectedMain = selectedSub && mainCategories.find(main => main._id === selectedSub.main);
+      console.log('Selected Main Category:', selectedMain);
 
-  document.getElementById('productForm')?.addEventListener('submit', (e) => {
-    if (!metaSelect.value || !mainSelect.value || !subSelect.value) {
-      e.preventDefault();
-      alert('Please select all category levels in order.');
+      const selectedMeta = selectedMain && metaCategories.find(meta => meta._id === selectedMain.meta);
+      console.log('Selected Meta Category:', selectedMeta);
+
+      if (selectedMeta && selectedMain && selectedSub) {
+        metaSelect.value = selectedMeta._id;
+        updateMain(selectedMeta._id, selectedMain._id);
+        updateSub(selectedMain._id, selectedSub._id);
+
+        mainSelect.value = selectedMain._id;
+        subSelect.value = selectedSub._id;
+
+        mainSelect.disabled = false;
+        subSelect.disabled = false;
+      }
     }
   });
 </script>
+
+<% 
+// Form field names used for submission:
+// name="metaCategoryId"   -> holds selected meta category _id
+// name="mainCategoryId"   -> holds selected main category _id
+// name="subCategoryId"    -> holds selected sub category _id
+%>

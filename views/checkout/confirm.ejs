@@ -1,0 +1,74 @@
+<div class="checkout-confirm-container">
+  <h1>Order Confirmation</h1>
+
+  <h3>Delivering to:</h3>
+  <p>
+    <strong>District:</strong> <%= deliveryAddress.district %><br>
+    <strong>Village:</strong> <%= deliveryAddress.village %><br>
+    <strong>Street:</strong> <%= deliveryAddress.street %>
+  </p>
+
+  <p><strong>Payment Method:</strong> 
+    <%= paymentMethod === 'cod' ? 'Cash on Delivery' : 'MTN Mobile Money' %>
+  </p>
+
+  <table class="cart-table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% let total = 0; %>
+      <% cart.forEach(item => {
+        const price = item.price || 0;
+        const subtotal = price * item.quantity;
+        total += subtotal;
+      %>
+        <tr>
+          <td><%= item.name %> <% if (item.variantName) { %><small>(<%= item.variantName %>)</small><% } %></td>
+          <td>UGX <%= price.toLocaleString() %></td>
+          <td><%= item.quantity %></td>
+          <td>UGX <%= subtotal.toLocaleString() %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <p><strong>Subtotal:</strong> UGX <%= total.toLocaleString() %></p>
+  <p><strong>Delivery Fee:</strong> UGX <%= deliveryFee.toLocaleString() %></p>
+  <h3>Total: UGX <%= (total + deliveryFee).toLocaleString() %></h3>
+
+  <form id="checkoutForm" action="/checkout/process" method="POST">
+  <input type="hidden" name="paymentMethod" value="<%= paymentMethod %>">
+  <input type="hidden" name="totalAmount" value="<%= total + deliveryFee %>">
+
+  <% if (paymentMethod === 'prepaid') { %>
+    <label for="momoNumber">Enter MTN Mobile Money Number:</label>
+    <input type="tel" id="momoNumber" name="momoNumber" required placeholder="e.g. 077xxxxxxx">
+    <button type="submit">Make Payment</button>
+  <% } else { %>
+    <button type="submit">Place Order</button>
+  <% } %>
+</form>
+
+<script>
+  document.getElementById('checkoutForm')?.addEventListener('submit', function (e) {
+    const paymentMethod = "<%= paymentMethod %>";
+    if (paymentMethod === 'prepaid') {
+      const numberInput = document.getElementById('momoNumber');
+      const number = numberInput.value.trim();
+      const validPrefixes = ['077', '078', '076'];
+
+      if (!/^\d{10}$/.test(number) || !validPrefixes.includes(number.slice(0, 3))) {
+        e.preventDefault();
+        alert("Please enter a valid 10-digit MTN number starting with 077, 078, or 076.");
+        numberInput.focus();
+      }
+    }
+  });
+</script>
+</div>

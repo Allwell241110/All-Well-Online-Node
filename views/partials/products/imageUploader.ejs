@@ -1,12 +1,30 @@
+<!-- 
+  Data expected from backend:
+    - images: Array of existing image objects (each with at least a 'url' property), optional
+    - editing: Boolean indicating if the form is in edit mode (true) or create mode (false)
+
+  Fields this partial will provide for submission:
+    - newImages: (input[type="file"], multiple) newly selected images to upload
+    - existingImages[]: (hidden inputs) for existing images that the user keeps
+    - removedImages[]: (hidden inputs) for existing images the user removed (to be deleted)
+-->
+
 <div class="image-uploader">
   <label for="productImages" class="upload-label">Upload Product Images</label>
-  <input type="file" id="productImages" name="newImages" multiple accept="image/*" hidden>
+  <input 
+    type="file" 
+    id="productImages" 
+    name="newImages" 
+    multiple 
+    accept="image/*" 
+    hidden 
+    <%= editing && (!images || images.length === 0) ? 'required' : '' %> >
 
   <button type="button" class="upload-trigger">Select Images</button>
 
   <div class="preview-container" id="imagePreviewContainer">
-    <% if (images && images.length) { %>
-      <% images.forEach(img => { %>
+    <% if (editing && images && images.length) { %>
+      <% images.forEach((img) => { %>
         <div class="image-wrapper existing-image" data-url="<%= img.url %>">
           <img src="<%= img.url %>" alt="Existing Image" class="preview-image" />
           <span class="remove-btn" title="Remove">&times;</span>
@@ -18,15 +36,19 @@
 </div>
 
 <script>
+  const editing = <%= editing ? 'true' : 'false' %>;
   const fileInput = document.getElementById('productImages');
   const triggerBtn = document.querySelector('.upload-trigger');
   const previewContainer = document.getElementById('imagePreviewContainer');
+  const form = document.querySelector('productForm');
 
-  const selectedImages = [];
-  const removedImageURLs = [];
+  const selectedNewImages = [];
+  const removedExistingURLs = [];
 
+  // Trigger file selection
   triggerBtn.addEventListener('click', () => fileInput.click());
 
+  // Handle new image selection
   fileInput.addEventListener('change', () => {
     const files = Array.from(fileInput.files);
 
@@ -36,48 +58,81 @@
       reader.onload = (e) => {
         const url = e.target.result;
 
-        if (selectedImages.find(img => img.name === file.name && img.size === file.size)) return;
+        // Prevent duplicate files
+        if (selectedNewImages.find(img => img.name === file.name && img.size === file.size)) return;
 
-        selectedImages.push(file);
+        selectedNewImages.push(file);
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'image-wrapper new-image';
-        wrapper.innerHTML = `
-          <img src="${url}" alt="${file.name}" class="preview-image" />
-          <span class="remove-btn" title="Remove">&times;</span>
-        `;
-
-        wrapper.querySelector('.remove-btn').addEventListener('click', () => {
-          previewContainer.removeChild(wrapper);
-          const index = selectedImages.findIndex(f => f.name === file.name && f.size === file.size);
-          if (index > -1) selectedImages.splice(index, 1);
-        });
-
+        const wrapper = createImageWrapper(url, file.name, false);
         previewContainer.appendChild(wrapper);
       };
 
       reader.readAsDataURL(file);
     });
-
-    fileInput.value = '';
-    window.selectedImages = selectedImages;
+    window.selectedNewImages = selectedNewImages;
   });
 
-  // Handle removing existing images (in edit mode)
-  document.querySelectorAll('.existing-image .remove-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const wrapper = e.target.closest('.existing-image');
-      const url = wrapper.dataset.url;
+  // Delegate event to the preview container for image removal
+  previewContainer.addEventListener('click', (e) => {
+  if (e.target && e.target.classList.contains('remove-btn')) {
+    const wrapper = e.target.closest('.image-wrapper');
+    if (!wrapper) return; // Prevent error if wrapper is null
 
-      removedImageURLs.push(url);
+    const url = wrapper.dataset.url;
+
+    if (wrapper.classList.contains('existing-image')) {
+      removedExistingURLs.push(url);
+    }
+    
+    window.removedExistingURLs = removedExistingURLs
+
+    wrapper.remove();
+
+    const removedInput = document.createElement('input');
+    removedInput.type = 'hidden';
+    removedInput.name = 'removedImages[]';
+    removedInput.value = url;
+    form.appendChild(removedInput);
+  }
+});
+
+  function createImageWrapper(imageURL, altText, isExisting) {
+    const wrapper = document.createElement('div');
+    wrapper.className = `image-wrapper ${isExisting ? 'existing-image' : 'new-image'}`;
+    wrapper.innerHTML = `
+      <img src="${imageURL}" alt="${altText}" class="preview-image" />
+      <span class="remove-btn" title="Remove">&times;</span>
+    `;
+
+    wrapper.querySelector('.remove-btn').addEventListener('click', () => {
       wrapper.remove();
-
-      // Add hidden input to mark it for removal
-      const removedInput = document.createElement('input');
-      removedInput.type = 'hidden';
-      removedInput.name = 'removedImages[]';
-      removedInput.value = url;
-      document.querySelector('form').appendChild(removedInput);
+      if (!isExisting) {
+        const index = selectedNewImages.findIndex(f => f.name === altText);
+        if (index > -1) selectedNewImages.splice(index, 1);
+      }
     });
+
+    return wrapper;
+  }
+
+  // Optional: if editing and no images remain, re-require the input
+  if (editing && !document.querySelector('.existing-image')) {
+    fileInput.required = true;
+  }
+
+  form.addEventListener('submit', (e) => {
+    if (editing && !selectedNewImages.length && !document.querySelector('.existing-image')) {
+      alert('Please upload at least one image.');
+      e.preventDefault();
+    }
+  });
+
+  // Clear new images array when resetting the form
+  form.addEventListener('reset', () => {
+    selectedNewImages.length = 0;
   });
 </script>
+
+<%
+  //End of partial.
+%>

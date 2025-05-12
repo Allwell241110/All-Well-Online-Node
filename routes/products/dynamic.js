@@ -3,6 +3,8 @@ const router = express.Router();
 const multer = require('multer');
 const axios = require('axios');
 const Product = require('../../models/Product');
+const MetaCategory = require('../../models/MetaCategory');
+const MainCategory = require('../../models/MainCategory');
 const SubCategory = require('../../models/SubCategory');
 require('dotenv').config();
 
@@ -47,77 +49,121 @@ router.post('/', upload.any(), async (req, res) => {
     console.log('Files:', req.files?.map(f => f.fieldname));
 
     const {
-      productName,
-      productDescription,
-      productPrice,
-      productSalePrice,
-      productBrand,
-      productStock,
-      subCatId,
-      variants
+      name,
+      description,
+      price,
+      salePrice,
+      brand,
+      stock,
+      metaCategoryId,
+      mainCategoryId,
+      subCategoryId,
     } = req.body;
 
-    let parsedVariants = [];
-    try {
-      parsedVariants = JSON.parse(variants || '[]');
-    } catch (err) {
-      console.error('Failed to parse variants JSON:', variants);
+    let variants = Object.values(req.body.variants || {}).filter(variant => variant.name);
+
+    // Fix malformed variant fields if submitted as nested arrays
+    if (
+      variants.length &&
+      (
+        Array.isArray(variants[0]?.name) ||
+        Array.isArray(variants[0]?.price) ||
+        Array.isArray(variants[0]?.salePrice) ||
+        Array.isArray(variants[0]?.stock)
+      )
+    ) {
+      const names = variants[0].name || [];
+      const prices = variants[0].price || [];
+      const salePrices = variants[0].salePrice || [];
+      const stocks = variants[0].stock || [];
+
+      variants = names.map((name, i) => ({
+        name,
+        price: isNaN(parseFloat(prices[i])) ? 0 : parseFloat(prices[i]),
+        salePrice: salePrices[i] ? parseFloat(salePrices[i]) : null,
+        stock: isNaN(parseInt(stocks[i])) ? 0 : parseInt(stocks[i]),
+      }));
+    } else {
+      variants = variants.map(v => {
+        const name = Array.isArray(v.name) ? v.name[0] : v.name;
+        const rawPrice = Array.isArray(v.price) ? v.price[0] : v.price;
+        const rawSalePrice = Array.isArray(v.salePrice) ? v.salePrice[0] : v.salePrice;
+        const rawStock = Array.isArray(v.stock) ? v.stock[0] : v.stock;
+
+        return {
+          name,
+          price: isNaN(parseFloat(rawPrice)) ? 0 : parseFloat(rawPrice),
+          salePrice: rawSalePrice ? parseFloat(rawSalePrice) : null,
+          stock: isNaN(parseInt(rawStock)) ? 0 : parseInt(rawStock),
+          removedImage: v.removedImage || '',
+        };
+      });
     }
 
-    // Separate product and variant images
-    const productImages = req.files?.filter(file => file.fieldname === 'images') || [];
-    const variantImages = {};
+    // Map uploaded files
+    const fileMap = {};
     req.files?.forEach(file => {
-      if (file.fieldname.startsWith('variantImage_')) {
-        variantImages[file.fieldname] = file;
-      }
+      fileMap[file.fieldname] = file;
     });
 
-    // Upload product images
-    let uploadedImages = [];
-    if (productImages.length > 0) {
-      uploadedImages = await Promise.all(
+    // Handle product images
+    let uploadedProductImages = [];
+    const productImages = req.files?.filter(file => file.fieldname === 'newImages') || [];
+    try {
+      uploadedProductImages = await Promise.all(
         productImages.map(file => uploadToImgur(file.buffer))
       );
+    } catch (imgErr) {
+      console.error('Failed to upload product images:', imgErr.message);
+      return res.status(500).json({ error: 'Failed to upload product images' });
     }
 
-    // Upload variant images and store the URL and delete hash for each variant
-    for (let i = 0; i < parsedVariants.length; i++) {
-      const variant = parsedVariants[i];
+    // Handle variant images
+    for (let i = 0; i < variants.length; i++) {
       const fieldKey = `variantImage_${i}`;
-      const file = variantImages[fieldKey];
+      const file = fileMap[fieldKey];
 
       if (file) {
         try {
           const uploaded = await uploadToImgur(file.buffer);
-          // Store the uploaded image URL and delete hash in the respective variant object
-          variant.image = { url: uploaded.url, deleteHash: uploaded.deleteHash };
+          variants[i].image = {
+            url: uploaded.url,
+            deleteHash: uploaded.deleteHash,
+          };
           console.log(`Uploaded image for variant ${i}:`, uploaded.url);
         } catch (imgErr) {
           console.error(`Failed to upload variant image for ${fieldKey}:`, imgErr.message);
         }
-      } else {
-        console.log(`No image provided for variant index ${i}`);
       }
     }
 
-    // Save the product and its variants with images
+    // Format final variant structure
+    const finalVariants = variants.map(v => ({
+      name: v.name,
+      price: isNaN(Number(v.price)) ? 0 : Number(v.price),
+      salePrice: v.salePrice ? Number(v.salePrice) : null,
+      stock: isNaN(Number(v.stock)) ? 0 : Number(v.stock),
+      image: v.image || undefined,
+    }));
+
+    // Create and save the product
     const newProduct = new Product({
-      name: productName,
-      description: productDescription,
-      price: productPrice,
-      salePrice: productSalePrice,
-      brand: productBrand,
-      stock: productStock,
-      images: uploadedImages,
-      category: subCatId,
-      variants: parsedVariants,
+      name: name?.trim(),
+      description: description?.trim(),
+      price: isNaN(Number(price)) ? 0 : Number(price),
+      salePrice: salePrice ? Number(salePrice) : null,
+      brand: brand?.trim(),
+      stock: isNaN(Number(stock)) ? 0 : Number(stock),
+      metaCategory: metaCategoryId,
+      mainCategory: mainCategoryId,
+      category: subCategoryId,
+      images: uploadedProductImages,
+      variants: finalVariants,
     });
 
-    const saved = await newProduct.save();
-    console.log('Product saved:', saved);
-    res.status(201).json(saved);
-
+    const savedProduct = await newProduct.save();
+    console.log('Product created:', savedProduct);
+    res.status(201).json(savedProduct);
   } catch (err) {
     console.error('Error while creating product:', err);
     res.status(500).json({ error: 'Failed to create product' });
@@ -194,18 +240,29 @@ router.get('/:name', async (req, res) => {
 });
 
 router.get('/edit/:productId', async (req, res) => {
+  const variants = req.query.variants === 'true';
   try {
     const { productId } = req.params;
+    
+    const [metaCategories, mainCategories, subCategories, product] = await Promise.all([
+      MetaCategory.find(),
+      MainCategory.find(),
+      SubCategory.find(),
+      Product.findById(productId)
+    ]);
 
-    const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).send('Product not found');
     }
 
     res.render('products/addProductForm', {
       title: 'Edit Product',
-      product, // this will be available in your view as "product"
-      editing: true // flag to indicate it's an edit operation
+      product,
+      editing: true,
+      metaCategories,
+      mainCategories,
+      subCategories,
+      variants
     });
   } catch (err) {
     console.error('Error fetching product for editing:', err.message);
@@ -217,90 +274,166 @@ router.put('/:productId', upload.any(), async (req, res) => {
   try {
     const { productId } = req.params;
     const {
-      productName,
-      productDescription,
-      productPrice,
-      productSalePrice,
-      productBrand,
-      productStock,
-      subCatId,
-      variants,
-      removeImageIndexes
+      name,
+      description,
+      price,
+      salePrice,
+      brand,
+      stock,
+      metaCategoryId,
+      mainCategoryId,
+      subCategoryId,
+      removedImages,
     } = req.body;
 
+    let variants = Object.values(req.body.variants || {}).filter(variant => variant.name);
+
+    // Fix malformed variant fields if submitted as nested arrays
+    if (
+  Array.isArray(variants[0]?.name) ||
+  Array.isArray(variants[0]?.price) ||
+  Array.isArray(variants[0]?.salePrice) ||
+  Array.isArray(variants[0]?.stock)
+) {
+  const names = variants[0].name || [];
+  const prices = variants[0].price || [];
+  const salePrices = variants[0].salePrice || [];
+  const stocks = variants[0].stock || [];
+
+  variants = names.map((name, i) => ({
+    name,
+    price: isNaN(parseFloat(prices[i])) ? 0 : parseFloat(prices[i]),
+    salePrice: salePrices[i] ? parseFloat(salePrices[i]) : null,
+    stock: isNaN(parseInt(stocks[i])) ? 0 : parseInt(stocks[i]),
+  }));
+} else {
+  variants = variants.map(v => {
+    const name = Array.isArray(v.name) ? v.name[0] : v.name;
+    const rawPrice = Array.isArray(v.price) ? v.price[0] : v.price;
+    const rawSalePrice = Array.isArray(v.salePrice) ? v.salePrice[0] : v.salePrice;
+    const rawStock = Array.isArray(v.stock) ? v.stock[0] : v.stock;
+
+    return {
+      name,
+      price: isNaN(parseFloat(rawPrice)) ? 0 : parseFloat(rawPrice),
+      salePrice: rawSalePrice ? parseFloat(rawSalePrice) : null,
+      stock: isNaN(parseInt(rawStock)) ? 0 : parseInt(rawStock),
+      removedImage: v.removedImage || '',
+    };
+  });
+}
+
+    console.log('--- Incoming Update Request ---');
+    console.log('Product ID:', productId);
+    console.log('Body Fields:', req.body);
+    console.log('Files:', req.files?.map(f => f.fieldname) || []);
+
     const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-
-    // Parse incoming variant JSON and remove indexes
-    let parsedVariants = [];
-    try {
-      parsedVariants = JSON.parse(variants || '[]');
-    } catch (err) {
-      console.error('Invalid variant JSON:', variants);
+    if (!product) {
+      console.error('Product not found for ID:', productId);
+      return res.status(404).json({ error: 'Product not found' });
     }
 
-    let removeIndexes = [];
-    try {
-      removeIndexes = JSON.parse(removeImageIndexes || '[]');
-    } catch (err) {
-      console.error('Invalid removeImageIndexes:', removeImageIndexes);
-    }
-
-    // Separate files
-    const productImages = req.files?.filter(f => f.fieldname === 'images') || [];
+    const newImages = req.files?.filter(f => f.fieldname === 'newImages') || [];
     const variantImages = {};
     req.files?.forEach(file => {
-      if (file.fieldname.startsWith('variantImage_')) {
-        variantImages[file.fieldname] = file;
+      const match = file.fieldname.match(/^variantImage_(\d+)$/);
+      if (match) {
+        const index = match[1];
+        variantImages[index] = file;
       }
     });
 
-    // Remove selected old product images
-    const removedImages = product.images.filter((_, i) => removeIndexes.includes(i));
-    removedImages.forEach(img => {
-      if (img.deleteHash) deleteFromImgur(img.deleteHash);
-    });
-    product.images = product.images.filter((_, i) => !removeIndexes.includes(i));
+    console.log('New Product Images:', newImages.length);
+    console.log('Variant Images:', Object.keys(variantImages));
 
-    // Upload new product images
-    const newlyUploaded = await Promise.all(
-      productImages.map(file => uploadToImgur(file.buffer))
-    );
-    product.images.push(...newlyUploaded);
+    const removed = Array.isArray(removedImages)
+      ? removedImages
+      : removedImages ? [removedImages] : [];
 
-    // Update variants with new images and delete replaced ones
-    for (let i = 0; i < parsedVariants.length; i++) {
-      const variant = parsedVariants[i];
-      const fieldKey = `variantImage_${i}`;
-      const file = variantImages[fieldKey];
+    if (removed.length > 0) {
+      console.log(`Attempting to remove ${removed.length} old image(s)...`);
+      const remainingImages = [];
+      for (const img of product.images) {
+        if (removed.includes(img.url)) {
+          console.log(`--> Marked for deletion: ${img.url}`);
+          if (img.deleteHash) {
+            try {
+              await deleteFromImgur(img.deleteHash);
+              console.log(`✓ Deleted from Imgur: ${img.url}`);
+            } catch (err) {
+              console.error(`✗ Failed to delete ${img.url} from Imgur:`, err.message);
+            }
+          } else {
+            console.warn(`! No deleteHash for image: ${img.url}, skipping Imgur deletion.`);
+          }
+        } else {
+          remainingImages.push(img);
+        }
+      }
+      product.images = remainingImages;
+    } else {
+      console.log('No old images marked for removal.');
+    }
+
+    if (newImages.length > 0) {
+      console.log('Uploading new product images...');
+      const newlyUploaded = await Promise.all(
+        newImages.map(file => uploadToImgur(file.buffer))
+      );
+      console.log('Uploaded new images:', newlyUploaded.map(img => img.url));
+      product.images.push(...newlyUploaded);
+    }
+
+    console.log('Processing variant images...');
+    for (let i = 0; i < variants.length; i++) {
+      const variant = variants[i];
+      const file = variantImages[i.toString()];
 
       if (file) {
+        console.log(`Uploading new image for variant ${i}...`);
         if (variant.image?.deleteHash) {
+          console.log(`Deleting old variant image for variant ${i}...`);
           await deleteFromImgur(variant.image.deleteHash);
         }
         const uploaded = await uploadToImgur(file.buffer);
+        console.log(`✓ Uploaded new variant image ${i}:`, uploaded.url);
         variant.image = { url: uploaded.url, deleteHash: uploaded.deleteHash };
-        console.log(`Replaced image for variant ${i}:`, uploaded.url);
       } else {
-        // If no new image, retain the old image (if any)
-        variant.image = product.variants[i]?.image || null;
+        const removed = variant.removedImage;
+
+        if (removed) {
+          console.log(`Variant ${i} image marked for removal.`);
+          variant.image = undefined;
+        } else {
+          console.log(`No new image for variant ${i}, keeping existing.`);
+          const existing = product.variants[i]?.image;
+          if (existing && existing.url) {
+            variant.image = existing;
+          } else {
+            delete variant.image;
+          }
+        }
       }
     }
 
-    // Update main fields
-    product.name = productName;
-    product.description = productDescription;
-    product.price = productPrice;
-    product.salePrice = productSalePrice;
-    product.brand = productBrand;
-    product.stock = productStock;
-    product.category = subCatId;
-    product.variants = parsedVariants;
+    product.name = name;
+    product.description = description;
+    product.price = price;
+    product.salePrice = salePrice || null;
+    product.brand = brand || '';
+    product.stock = stock;
+    product.metaCategory = metaCategoryId;
+    product.mainCategory = mainCategoryId;
+    product.category = subCategoryId;
+    product.variants = variants;
 
     const updated = await product.save();
+    console.log('✓ Product updated successfully:', updated._id);
     res.status(200).json(updated);
+
   } catch (err) {
-    console.error('Error updating product:', err.message);
+    console.error('✗ Error updating product:', err.message);
     res.status(500).json({ error: 'Failed to update product' });
   }
 });

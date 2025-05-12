@@ -1,57 +1,114 @@
-<main>
- <div class="cart-container">
-    <h1>Your Shopping Cart</h1>
+<div class="cart-container">
+  <h1>Your Shopping Cart</h1>
 
-    <% if (cart && cart.length > 0) { %>
-      <table class="cart-table">
-        <thead>
+  <% if (cart && cart.length > 0) { %>
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Subtotal</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let total = 0; %>
+        <% cart.forEach(item => { 
+          const price = item.price || 0;  // Ensure price is defined
+          const subtotal = price * item.quantity;
+          total += subtotal;
+        %>
           <tr>
-            <th>Product</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Subtotal</th>
-            <th>Remove</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% let total = 0; %>
-          <% cart.forEach(item => { 
-            const price = item.price;
-            const subtotal = price * item.quantity;
-            total += subtotal;
-          %>
-            <tr>
-              <td class="product-info">
-                <img src="<%= item.image %>" alt="<%= item.name %>">
+            <td class="product-info">
+              <img src="<%= item.variantImage || item.image %>" alt="<%= item.name %>">
+              <div>
                 <span><%= item.name %></span>
-              </td>
-              <td>UGX<%= price.toFixed(2) %></td>
-              <td>
-                <form method="POST" action="/cart/update">
-                  <input type="hidden" name="productId" value="<%= item.productId %>">
-                  <input type="number" name="quantity" value="<%= item.quantity %>" min="0">
-                  <button type="submit">Update</button>
-                </form>
-              </td>
-              <td>UGX<%= subtotal.toFixed(2) %></td>
-              <td>
-                <form method="POST" action="/cart/remove">
-                  <input type="hidden" name="productId" value="<%= item.productId %>">
-                  <button type="submit">Remove</button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <div class="cart-total">
-        <h3>Total: UGX<%= total.toFixed(2) %></h3>
-        <a href="/checkout" class="checkout-btn">Proceed to Checkout</a>
-      </div>
-    <% } else { %>
-      <p>Your cart is empty.</p>
-    <% } %>
-  </div> 
-</main>
-<script src="/js/cart.js"></script>
+                <% if (item.variantName) { %>
+                  <br><small>(<%= item.variantName %>)</small>
+                <% } %>
+              </div>
+            </td>
+            <td>UGX <%= price > 0 ? price.toFixed(2) : 'N/A' %></td> <!-- Display 'N/A' if price is not valid -->
+            <td>
+              <form method="POST" action="/cart/update">
+                <input type="hidden" name="productId" value="<%= item.productId %>">
+                <% if (item.variantId) { %>
+                  <input type="hidden" name="variantId" value="<%= item.variantId %>">
+                <% } %>
+                <input type="number" name="quantity" value="<%= item.quantity %>" min="0" aria-label="Quantity for <%= item.name %>">
+                <button type="submit">Update</button>
+              </form>
+            </td>
+            <td>UGX <%= subtotal > 0 ? subtotal.toFixed(2) : 'N/A' %></td> <!-- Display 'N/A' if subtotal is not valid -->
+            <td>
+              <form method="POST" action="/cart/remove">
+                <input type="hidden" name="productId" value="<%= item.productId %>">
+                <% if (item.variantId) { %>
+                  <input type="hidden" name="variantId" value="<%= item.variantId %>">
+                <% } %>
+                <button type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <div class="cart-total">
+      <h3>Total: UGX <%= total > 0 ? total.toFixed(2) : 'N/A' %></h3> <!-- Display 'N/A' if total is not valid -->
+      <a href="/checkout" class="checkout-btn">Proceed to Checkout</a>
+    </div>
+  <% } else { %>
+    <p>Your cart is empty.</p>
+  <% } %>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const updateForms = document.querySelectorAll('form[action="/cart/update"]');
+
+    updateForms.forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const productId = form.querySelector('input[name="productId"]').value;
+        const variantIdInput = form.querySelector('input[name="variantId"]');
+        const variantId = variantIdInput ? variantIdInput.value : null;
+        const quantity = parseInt(form.querySelector('input[name="quantity"]').value);
+
+        try {
+          const res = await fetch('/cart/update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ productId, variantId, quantity }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showAlert('success', data.message);
+            window.location.reload();
+          } else {
+            showAlert('danger', data.message || 'Failed to update cart');
+          }
+        } catch (err) {
+          console.error(err);
+          showAlert('danger', 'An error occurred while updating the cart');
+        }
+      });
+    });
+
+    function showAlert(type, message) {
+      const alertBox = document.createElement('div');
+      alertBox.className = `alert alert-${type}`;
+      alertBox.textContent = message;
+      document.body.appendChild(alertBox);
+
+      setTimeout(() => {
+        alertBox.remove();
+      }, 3000);
+    }
+  });
+</script>
   
