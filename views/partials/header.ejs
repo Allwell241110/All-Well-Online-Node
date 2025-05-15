@@ -13,14 +13,22 @@
 
     <!-- Sidebar Menu -->
     <div id="sidebar" class="sidebar">
-      <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/shop">Shop</a></li>
-        <li><a href="/about">About</a></li>
-        <li><a href="/contact">Contact</a></li>
-        <li><a href="/cart">Cart (<%= cartItemCount %>)</a></li>
-      </ul>
-    </div>
+  <ul>
+    <li><a href="/">Home</a></li>
+    <li><a href="/shop">Shop</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/contact">Contact</a></li>
+    <li><a href="/cart">Cart (<%= cartItemCount %>)</a></li>
+    <h1 class="categories">Categories/</h1>
+    <% if (metaCategories && metaCategories.length > 0) { %>
+      <% metaCategories.forEach(category => { %>
+        <li>
+          <a href="/categories/main-categories/<%= category._id %>"><%= category.name %></a>
+        </li>
+      <% }); %>
+    <% } %>
+  </ul>
+</div>
 
     <!-- Overlay to Close Sidebar -->
     <div id="overlay" class="overlay" onclick="closeMenu()"></div>

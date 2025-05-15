@@ -23,10 +23,10 @@
 
 <div class="category-selectors" 
      data-editing="<%= editing %>" 
-     data-product='<%- JSON.stringify(product || {}) %>' 
-     data-meta='<%- JSON.stringify(metaCategories) %>' 
-     data-main='<%- JSON.stringify(mainCategories) %>' 
-     data-sub='<%- JSON.stringify(subCategories) %>'>
+     data-product="<%- JSON.stringify(product || {}).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" 
+     data-meta="<%- JSON.stringify(metaCategories).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" 
+     data-main="<%- JSON.stringify(mainCategories).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>" 
+     data-sub="<%- JSON.stringify(subCategories).replace(/&/g, '&amp;').replace(/"/g, '&quot;') %>">
 
   <!-- Meta Category -->
   <div class="form-group">

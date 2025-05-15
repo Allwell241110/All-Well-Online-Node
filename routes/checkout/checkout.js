@@ -6,6 +6,7 @@ require('dotenv').config();
 const User = require('../../models/User');
 const DeliveryAddress = require('../../models/DeliveryAddress');
 const District = require('../../models/District');
+const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
 router.get('/', async (req, res) => {
   try {
@@ -53,25 +54,30 @@ router.post('/', async (req, res) => {
         await user.save();
       }
 
-      // Set userId for future use
       userId = user._id;
 
-      // Store the userId in the session for future requests
+      // Store the user in session
       req.session.user = {
         _id: userId,
         name: user.name,
         email: user.email,
         role: 'guest',
       };
+
     } else {
-      // User is logged in, retrieve their data from session
+      // Logged in user
       user = await User.findById(userId);
+
+      // Update missing phone number if not already set
+      if (!user.phoneNumber && phone) {
+        user.phoneNumber = phone;
+        await user.save();
+      }
     }
 
     // Check if the user already has a delivery address
     let address = await DeliveryAddress.findOne({ user: userId });
     if (!address) {
-      // Create and store a new delivery address
       address = new DeliveryAddress({
         user: userId,
         district: deliveryAddress.district,
@@ -80,7 +86,7 @@ router.post('/', async (req, res) => {
       });
       await address.save();
     } else {
-      // Optionally, update the address if necessary (if user wants to change)
+      // Update address if needed
       address.district = deliveryAddress.district;
       address.village = deliveryAddress.village;
       address.street = deliveryAddress.street;
@@ -109,7 +115,7 @@ router.post('/', async (req, res) => {
 });
 
 
-router.post('/confirm', async (req, res) => {
+router.post('/confirm', isGuest, async (req, res) => {
   try {
     const cart = req.session.cart || [];
     const { deliveryFee, paymentMethod } = req.body;
@@ -144,8 +150,8 @@ const { getMomoToken } = require('../../utils/momoTokenManager');
 
 const { v4: uuidv4 } = require('uuid');
 
-router.post('/process', async (req, res) => {
-  const { paymentMethod, momoNumber, totalAmount } = req.body;
+router.post('/process', isGuest, async (req, res) => {
+  const { paymentMethod, momoNumber, totalAmount, deliveryAddress } = req.body;
   const cart = req.session.cart || [];
   const user = req.session.user;
 
@@ -162,7 +168,11 @@ router.post('/process', async (req, res) => {
   }
 
   try {
-    const deliveryAddress = await DeliveryAddress.findOne({ userId: user._id });
+    const address = {
+      district: deliveryAddress?.district,
+      village: deliveryAddress?.village,
+      street: deliveryAddress?.street,
+    };
 
     const order = new Order({
       userId: user._id,
@@ -171,7 +181,7 @@ router.post('/process', async (req, res) => {
       paymentMethod,
       momoNumber: paymentMethod === 'prepaid' ? momoNumber : undefined,
       paymentStatus: paymentMethod === 'prepaid' ? 'Pending' : 'Unpaid',
-      deliveryAddress,
+      deliveryAddress: address,
       createdAt: new Date(),
       transactions: []
     });
@@ -204,7 +214,6 @@ router.post('/process', async (req, res) => {
           },
           payerMessage: 'Payment for your order',
           payeeNote: 'Thank you for your purchase',
-          callbackUrl: process.env.MOMO_CALLBACK_URL,
         },
         {
           headers: {
@@ -219,12 +228,12 @@ router.post('/process', async (req, res) => {
 
       console.log('Payment request sent with ref:', externalId);
       return res.render('checkout/paymentPending', {
-        title:'Processing Payment',
+        title: 'Processing Payment',
         orderId: order._id 
       });
     }
 
-    res.redirect('/checkout/success', {
+    res.render('checkout/success', {
       title: 'Order Placed Successfully!'
     });
   } catch (err) {
@@ -233,42 +242,7 @@ router.post('/process', async (req, res) => {
   }
 });
 
-router.post('/callback', async (req, res) => {
-  try {
-    const { externalId, status, financialTransactionId } = req.body;
-
-    console.log('Callback received:', req.body);
-
-    // Find the order with a matching transaction externalId
-    const order = await Order.findOne({ 'transactions.externalId': externalId });
-
-    if (!order) {
-      return res.status(404).send('Order not found.');
-    }
-
-    // Find the transaction and update its status
-    const transaction = order.transactions.find(tx => tx.externalId === externalId);
-    if (transaction) {
-      transaction.status = status === 'SUCCESSFUL' ? 'Successful' : 'Failed';
-    }
-
-    // Update overall payment status if successful
-    if (status === 'SUCCESSFUL') {
-      order.paymentStatus = 'Paid';
-      order.transactionId = financialTransactionId;
-    } else if (status === 'FAILED') {
-      order.paymentStatus = 'Failed';
-    }
-
-    await order.save();
-    res.status(200).send('Callback processed.');
-  } catch (err) {
-    console.error('Callback handling error:', err.message);
-    res.status(500).send('Error processing callback.');
-  }
-});
-
-router.post('/retry-payment', async (req, res) => {
+router.post('/retry-payment', isGuest, async (req, res) => {
   const { orderId } = req.body;
 
   try {
@@ -296,9 +270,7 @@ router.post('/retry-payment', async (req, res) => {
           partyId: order.momoNumber,
         },
         payerMessage: 'Payment for your order',
-        payeeNote: 'Thank you for your purchase',
-        callbackUrl: process.env.MOMO_CALLBACK_URL,
-      },
+        payeeNote: 'Thank you for your purchase'      },
       {
         headers: {
           'X-Reference-Id': referenceId,
@@ -320,6 +292,8 @@ router.post('/retry-payment', async (req, res) => {
     res.status(500).send('Failed to retry payment. Try again later.');
   }
 });
+
+
 
 
 

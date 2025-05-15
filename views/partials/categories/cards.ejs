@@ -1,0 +1,15 @@
+<div class="categories">
+  <% if (categories.length > 0) { %>
+    <% categories.forEach(category => { 
+      const url = main 
+        ? `/categories/sub-categories/${category.id}` 
+        : `/categories/products/${encodeURIComponent(category.name)}`;
+    %>
+      <a href="<%= url %>" class="category-card">
+        <div class="category-name"><%= category.name %></div>
+      </a>
+    <% }) %>
+  <% } else { %>
+    <p class="no-categories">No categories found.</p>
+  <% } %>
+</div>

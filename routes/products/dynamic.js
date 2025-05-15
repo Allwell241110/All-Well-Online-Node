@@ -42,6 +42,14 @@ const deleteFromImgur = async (deleteHash) => {
   }
 };
 
+function isBase64(str) {
+  try {
+    return Buffer.from(str, 'base64').toString('base64') === str;
+  } catch (err) {
+    return false;
+  }
+}
+
 router.post('/', upload.any(), async (req, res) => {
   try {
     console.log('--- Incoming Request ---');
@@ -227,6 +235,18 @@ router.get('/:name', async (req, res) => {
     if (!product) {
       return res.status(404).render('404', { message: 'Product not found' });
     }
+    
+    function isBase64(str) {
+  try {
+    return Buffer.from(str, 'base64').toString('base64') === str;
+  } catch (err) {
+    return false;
+  }
+}
+
+if (isBase64(product.description)) {
+  product.description = Buffer.from(product.description, 'base64').toString('utf-8');
+}
 
     res.render('products/product', {
       title: `${product.name} - All Well Online`,
@@ -254,6 +274,10 @@ router.get('/edit/:productId', async (req, res) => {
     if (!product) {
       return res.status(404).send('Product not found');
     }
+    
+    if (isBase64(product.description)) {
+  product.description = Buffer.from(product.description, 'base64').toString('utf-8');
+}
 
     res.render('products/addProductForm', {
       title: 'Edit Product',
@@ -438,7 +462,6 @@ router.put('/:productId', upload.any(), async (req, res) => {
   }
 });
 
-
 router.delete('/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
@@ -472,6 +495,17 @@ router.delete('/:productId', async (req, res) => {
     console.error('Error deleting product:', err.message);
     res.status(500).json({ error: 'Failed to delete product' });
   }
+});
+
+router.get('/product/view-image', (req, res) => {
+  const imageUrl = req.query.url;
+  if (!imageUrl) return res.status(400).send('No image URL provided');
+
+  res.render('products/view-image', {
+  layout: false,
+  title: 'Full Image',
+  imageUrl: decodeURIComponent(req.query.url)
+});
 });
 
 module.exports = router;

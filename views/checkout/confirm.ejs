@@ -43,32 +43,37 @@
   <h3>Total: UGX <%= (total + deliveryFee).toLocaleString() %></h3>
 
   <form id="checkoutForm" action="/checkout/process" method="POST">
-  <input type="hidden" name="paymentMethod" value="<%= paymentMethod %>">
-  <input type="hidden" name="totalAmount" value="<%= total + deliveryFee %>">
+    <input type="hidden" name="paymentMethod" value="<%= paymentMethod %>">
+    <input type="hidden" name="totalAmount" value="<%= total + deliveryFee %>">
 
-  <% if (paymentMethod === 'prepaid') { %>
-    <label for="momoNumber">Enter MTN Mobile Money Number:</label>
-    <input type="tel" id="momoNumber" name="momoNumber" required placeholder="e.g. 077xxxxxxx">
-    <button type="submit">Make Payment</button>
-  <% } else { %>
-    <button type="submit">Place Order</button>
-  <% } %>
-</form>
+    <!-- Delivery address fields -->
+    <input type="hidden" name="deliveryAddress[district]" value="<%= deliveryAddress.district %>">
+    <input type="hidden" name="deliveryAddress[village]" value="<%= deliveryAddress.village %>">
+    <input type="hidden" name="deliveryAddress[street]" value="<%= deliveryAddress.street %>">
 
-<script>
-  document.getElementById('checkoutForm')?.addEventListener('submit', function (e) {
-    const paymentMethod = "<%= paymentMethod %>";
-    if (paymentMethod === 'prepaid') {
-      const numberInput = document.getElementById('momoNumber');
-      const number = numberInput.value.trim();
-      const validPrefixes = ['077', '078', '076'];
+    <% if (paymentMethod === 'prepaid') { %>
+      <label for="momoNumber">Enter MTN Mobile Money Number:</label>
+      <input type="tel" id="momoNumber" name="momoNumber" required placeholder="e.g. 077xxxxxxx">
+      <button type="submit">Make Payment</button>
+    <% } else { %>
+      <button type="submit">Place Order</button>
+    <% } %>
+  </form>
 
-      if (!/^\d{10}$/.test(number) || !validPrefixes.includes(number.slice(0, 3))) {
-        e.preventDefault();
-        alert("Please enter a valid 10-digit MTN number starting with 077, 078, or 076.");
-        numberInput.focus();
+  <script>
+    document.getElementById('checkoutForm')?.addEventListener('submit', function (e) {
+      const paymentMethod = "<%= paymentMethod %>";
+      if (paymentMethod === 'prepaid') {
+        const numberInput = document.getElementById('momoNumber');
+        const number = numberInput.value.trim();
+        const validPrefixes = ['077', '078', '076'];
+
+        if (!/^\d{10}$/.test(number) || !validPrefixes.includes(number.slice(0, 3))) {
+          e.preventDefault();
+          alert("Please enter a valid 10-digit MTN number starting with 077, 078, or 076.");
+          numberInput.focus();
+        }
       }
-    }
-  });
-</script>
+    });
+  </script>
 </div>

@@ -1,27 +1,32 @@
+<% const basePath = originalUrl.split('?')[0]; %>
+
 <div class="pagination-wrapper">
-  <form id="limit-form" method="GET" action="/products">
+  <form id="limit-form" method="GET" action="<%= basePath %>">
     <label for="limit">Items per page:</label>
     <select name="limit" id="limit" onchange="this.form.submit()">
       <option value="12" <%= limit == 12 ? 'selected' : '' %>>12</option>
       <option value="24" <%= limit == 24 ? 'selected' : '' %>>24</option>
       <option value="48" <%= limit == 48 ? 'selected' : '' %>>48</option>
     </select>
+
     <input type="hidden" name="page" value="<%= currentPage %>">
+    <input type="hidden" name="search" value="<%= searchQuery %>">
+    <input type="hidden" name="sort" value="<%= sort %>">
   </form>
 
   <div class="pagination-links">
     <% if (currentPage > 1) { %>
-      <a href="?page=<%= currentPage - 1 %>&limit=<%= limit %>" class="page-btn">Prev</a>
+      <a href="<%= basePath %>?page=<%= currentPage - 1 %>&limit=<%= limit %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sort %>" class="page-btn">Prev</a>
     <% } %>
 
     <% for (let i = 1; i <= totalPages; i++) { %>
-      <a href="?page=<%= i %>&limit=<%= limit %>" class="page-btn <%= i === currentPage ? 'active' : '' %>">
+      <a href="<%= basePath %>?page=<%= i %>&limit=<%= limit %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sort %>" class="page-btn <%= i === currentPage ? 'active' : '' %>">
         <%= i %>
       </a>
     <% } %>
 
     <% if (currentPage < totalPages) { %>
-      <a href="?page=<%= currentPage + 1 %>&limit=<%= limit %>" class="page-btn">Next</a>
+      <a href="<%= basePath %>?page=<%= currentPage + 1 %>&limit=<%= limit %>&search=<%= encodeURIComponent(searchQuery) %>&sort=<%= sort %>" class="page-btn">Next</a>
     <% } %>
   </div>
 </div>

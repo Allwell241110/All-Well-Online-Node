@@ -105,6 +105,161 @@ router.post('/meta/:id/update', async (req, res) => {
   res.redirect('/categories/constant/all-categories');
 });
 
+router.get('/main-categories/:metaCategoryId', async (req, res) => {
+  const { metaCategoryId } = req.params;
+
+  console.log('Received request for metaCategoryId:', metaCategoryId);
+
+  try {
+    const categories = await MainCategory.find({ meta: metaCategoryId });
+
+    console.log(`Found ${categories.length} main categories for metaCategoryId ${metaCategoryId}`);
+    categories.forEach(cat => {
+      console.log(` - Category: ${cat.name} (ID: ${cat._id})`);
+    });
+
+    res.render('categories/user/mainCategories', {
+      categories,
+      main: true,
+      title: 'Main Categories'
+    });
+  } catch (err) {
+    console.error('Error fetching main categories:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/sub-categories/:mainCategoryId', async (req, res) => {
+  try {
+    const mainCategoryId = req.params.mainCategoryId;
+    console.log('Main Category ID:', mainCategoryId);
+
+    // Query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const searchQuery = req.query.search || '';
+    const sort = req.query.sort || 'newest';
+    const skip = (page - 1) * limit;
+
+    console.log('Page:', page, 'Limit:', limit, 'Search Query:', searchQuery, 'Sort:', sort);
+
+    // Sorting
+    const sortOptions = {};
+    if (sort === 'price-asc') sortOptions.price = 1;
+    else if (sort === 'price-desc') sortOptions.price = -1;
+    else sortOptions.createdAt = -1;
+
+    console.log('Sort Options:', sortOptions);
+
+    // Step 1: Get all subcategories for this main category
+    const subcategories = await SubCategory.find({ main: mainCategoryId });
+    console.log('Fetched Subcategories:', subcategories);
+
+    const subCategoryIds = subcategories.map(sub => sub._id);
+    console.log('Subcategory IDs:', subCategoryIds);
+
+    // Step 2: Build product filter — corrected field name from 'subCategory' to 'category'
+    const productFilter = { category: { $in: subCategoryIds } };
+    if (searchQuery) {
+      productFilter.name = { $regex: searchQuery, $options: 'i' };
+    }
+
+    console.log('Product Filter:', productFilter);
+
+    // Step 3: Fetch products
+    const [products, totalProducts] = await Promise.all([
+      Product.find(productFilter)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit),
+      Product.countDocuments(productFilter)
+    ]);
+
+    console.log('Fetched Products Count:', products.length);
+    console.log('Total Products Matching Filter:', totalProducts);
+
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    res.render('categories/user/subCategory', {
+      title: 'Category Products',
+      main: false,
+      subcategories,
+      mainCategoryProducts: products,
+      searchQuery,
+      sort,
+      currentPage: page,
+      totalPages,
+      limit
+    });
+  } catch (err) {
+    console.error('Error fetching category products:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+const Product = require('../../models/Product');
+
+router.get('/products/:subcategoryName', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const searchQuery = req.query.search || '';
+    const sort = req.query.sort || 'newest';
+    const skip = (page - 1) * limit;
+
+    const sortOptions = {};
+    if (sort === 'price-asc') sortOptions.price = 1;
+    else if (sort === 'price-desc') sortOptions.price = -1;
+    else sortOptions.createdAt = -1;
+
+    // Debug logs for query params
+    console.log('--- Incoming Request ---');
+    console.log(`Subcategory Name: ${req.params.subcategoryName}`);
+    console.log(`Page: ${page}, Limit: ${limit}, Search: "${searchQuery}", Sort: "${sort}"`);
+    console.log('Sort Options:', sortOptions);
+
+    // Step 1: Find the subcategory
+    const subcategory = await SubCategory.findOne({ name: req.params.subcategoryName });
+    if (!subcategory) {
+      console.warn(`Subcategory not found: ${req.params.subcategoryName}`);
+      return res.status(404).send('Subcategory not found');
+    }
+    console.log('Subcategory found:', subcategory);
+
+    // Step 2: Build product filter
+    const filter = { category: subcategory._id };
+    if (searchQuery) {
+      filter.name = { $regex: searchQuery, $options: 'i' };
+    }
+    console.log('Product Filter:', filter);
+
+    // Step 3: Fetch products and count
+    const [products, totalProducts] = await Promise.all([
+      Product.find(filter).sort(sortOptions).skip(skip).limit(limit),
+      Product.countDocuments(filter)
+    ]);
+
+    console.log(`Fetched ${products.length} products out of ${totalProducts} total`);
+
+    const totalPages = Math.ceil(totalProducts / limit);
+    console.log(`Total Pages: ${totalPages}`);
+
+    // Step 4: Render the page
+    res.render('products/products', {
+      title: `${subcategory.name} Products`,
+      products,
+      searchQuery,
+      sort,
+      currentPage: page,
+      totalPages,
+      limit
+    });
+  } catch (err) {
+    console.error('Error fetching subcategory products:', err);
+    res.status(500).send('Server error while fetching products');
+  }
+});
+
 module.exports = router;
 
   

@@ -67,9 +67,15 @@
       </div>
 
       <div>
-        <label for="description">Product Description:</label>
-        <textarea id="description" name="description" required><%= product?.description || '' %></textarea>
-      </div>
+  <label for="description">Product Description:</label>
+<!-- Hidden textarea to store HTML content -->
+<textarea id="description" name="description" style="display: none;"></textarea>
+
+<!-- Visible editable div -->
+<div id="descriptionEditor" contenteditable="true" style="min-height: 150px; border: 1px solid #ccc; padding: 10px;">
+  <%- product?.description || '' %>
+</div>
+</div>
 
       <% if (!variants) { %>
           <div>
@@ -108,37 +114,47 @@
   </div>
 </div>
 
+
 <script>
   const productForm = document.getElementById('productForm');
 
-  // Check if the form has a hidden input for the productId (indicating that we're editing)
-  const productId = document.querySelector('input[name="productId"]')?.value;
-
-  // Define the route dynamically based on whether editing or creating
-  const route = editing ? `/products/${productId}` : '/products';
-  
-  // Handle form submission
   productForm.addEventListener('submit', async (event) => {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault();
 
-    // Collect form data, including new images and removed images
+    const editor = document.getElementById('descriptionEditor');
+    const hiddenTextarea = document.getElementById('description');
+    const editorContent = editor.innerHTML.trim();
+
+    if (!editorContent || editorContent === '<br>') {
+      alert('Description is required.');
+      editor.focus();
+      return;
+    }
+
+    hiddenTextarea.value = editorContent;
+
+    const productId = document.querySelector('input[name="productId"]')?.value;
+    const editing = Boolean(productId); // determine if we're editing
+    const route = editing ? `/products/${productId}` : '/products';
+
     const formData = new FormData(productForm);
-    if (Array.isArray(window.removedExistingURLs) && window.removedExistingURLs.length > 0) {
-  window.removedExistingURLs.forEach((url) => {
-    formData.append('removedImages[]', url);
-  });
-}
+
+    if (Array.isArray(window.removedExistingURLs)) {
+      window.removedExistingURLs.forEach((url) => {
+        formData.append('removedImages[]', url);
+      });
+    }
 
     try {
       const response = await fetch(route, {
-        method: editing ? 'PUT' : 'POST', // Use PUT for editing, POST for new product
+        method: editing ? 'PUT' : 'POST',
         body: formData,
       });
 
       if (response.ok) {
         const result = await response.json();
         alert('Product saved successfully!');
-        window.location.href = '/products'; // Redirect to product listing page
+        window.location.href = '/products';
       } else {
         const error = await response.json();
         alert('Error: ' + (error.message || 'Something went wrong.'));

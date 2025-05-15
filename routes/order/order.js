@@ -1,0 +1,118 @@
+const express = require('express');
+const router = express.Router();
+const Order = require('../../models/Order');
+const axios = require('axios');
+const { getMomoToken } = require('../../utils/momoTokenManager');
+const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
+
+// GET /orders — show list of orders
+router.get('/', isGuest, async (req, res) => {
+  try {
+    const query = req.session.user.role === 'admin' ? {} : { userId: req.session.user._id };
+    const orders = await Order.find(query).sort({ createdAt: -1 });
+
+    res.render('orders/orders', {
+      title: req.user.role === 'admin' ? 'All Orders' : 'My Orders',
+      orders
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error fetching orders.');
+  }
+});
+
+// GET /orders/:id
+router.get('/:id', isGuest, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).lean();
+    if (!order) return res.status(404).send('Order not found');
+
+    // Only check MoMo status if prepaid and still not paid
+    if (order.paymentMethod === 'prepaid' && order.paymentStatus !== 'Paid') {
+      const latestTx = order.transactions?.[order.transactions.length - 1];
+      if (latestTx && latestTx.status === 'Pending') {
+        const accessToken = await getMomoToken();
+
+        const response = await axios.get(
+          `${process.env.MOMO_BASE_URL}/collection/v1_0/requesttopay/${latestTx.externalId}`,
+          {
+            headers: {
+              'X-Target-Environment': process.env.TARGET_ENVIRONMENT,
+              'Ocp-Apim-Subscription-Key': process.env.MOMO_SUBSCRIPTION_KEY,
+              Authorization: `Bearer ${accessToken}`
+            }
+          }
+        );
+
+        const momoStatus = response.data.status; // 'SUCCESSFUL', 'FAILED', or 'PENDING'
+        let paymentStatus = 'Unpaid';
+        if (momoStatus === 'SUCCESSFUL') paymentStatus = 'Paid';
+        else if (momoStatus === 'FAILED') paymentStatus = 'Failed';
+
+        // Update order in DB
+        await Order.updateOne(
+          { _id: order._id, 'transactions.externalId': latestTx.externalId },
+          {
+            $set: {
+              paymentStatus,
+              'transactions.$.status': momoStatus === 'SUCCESSFUL' ? 'Successful' :
+                                       momoStatus === 'FAILED' ? 'Failed' : 'Pending',
+              transactionId: momoStatus === 'SUCCESSFUL' ? response.data.financialTransactionId : undefined
+            }
+          }
+        );
+
+        // Reload order with fresh values
+        Object.assign(order, {
+          paymentStatus,
+          transactionId: response.data.financialTransactionId || order.transactionId,
+          transactions: order.transactions.map(tx =>
+            tx.externalId === latestTx.externalId
+              ? { ...tx, status: momoStatus }
+              : tx
+          )
+        });
+      }
+    }
+
+    res.render('orders/orderDetails', {
+      title: 'Order Details',
+      order,
+    });
+
+  } catch (err) {
+    console.error('Error checking payment status:', err?.response?.data || err.message);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+router.post('/:id/status', isAdmin, async (req, res) => {
+  const { newStatus } = req.body;
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).send('Order not found');
+
+    order.status = newStatus;
+    order.updatedAt = new Date();
+    await order.save();
+
+    res.redirect(`/orders/${order._id}`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to update order status');
+  }
+});
+
+router.post('/:id/delete', isAdmin, async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+    res.redirect('/orders');
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to delete order');
+  }
+});
+
+module.exports = router;

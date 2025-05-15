@@ -1,0 +1,52 @@
+
+<div class="bulk-container">
+
+  <div class="bulk-container">
+
+    <h2>Bulk Upload Products via CSV</h2>
+
+    <% if (message) { %>
+      <div class="flash-message"><%= message %></div>
+    <% } %>
+
+    <form id="uploadForm">
+      <label for="csvFile">Select CSV File:</label><br>
+      <input type="file" id="csvFile" name="csvFile" accept=".csv" required><br><br>
+      <button type="submit">Upload</button>
+    </form>
+
+    <div class="status" id="status"></div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    const form = document.getElementById('uploadForm');
+    const statusDiv = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('csvFile');
+      if (!fileInput.files.length) {
+        statusDiv.textContent = "Please select a CSV file first.";
+        return;
+      }
+
+      const formData = new FormData();
+formData.append('csvFile', fileInput.files[0]);
+      statusDiv.textContent = "Uploading...";
+      try {
+        const response = await axios.post('/upload-csv', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        statusDiv.textContent = `Upload successful. ${response.data.savedCount} products added.`;
+      } catch (error) {
+        console.error(error);
+        statusDiv.textContent = "Upload failed. See console for details.";
+      }
+    });
+  </script>
+
+</div>

@@ -2,7 +2,12 @@
   <div class="container">
     <div class="product-wrapper">
       <div class="product-images">
-        <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="main-image" />
+        <img 
+  src="<%= product.images[0]?.url %>" 
+  alt="<%= product.name %>" 
+  class="main-image" 
+  data-full-url="/products/product/view-image?url=<%= encodeURIComponent(product.images[0]?.url) %>" 
+  style="cursor: zoom-in;" />
         <div class="thumbnail-row">
           <% product.images.forEach((img, i) => { %>
             <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" />
@@ -37,8 +42,7 @@
   <% } %>
 </div>
 
-        <p class="description"><%= product.description %></p>
-        <% if (!product.variants || !product.variants.length) { %>
+<p class="description"><%- product.description %></p>        <% if (!product.variants || !product.variants.length) { %>
   <p class="stock"><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></p>
 <% } %>
       </div>
@@ -51,6 +55,58 @@
     <div class="btn-container">
       <%- include('../partials/addToCart'), { product } %>
     </div>
+    <!-- WhatsApp Order Icon and Form -->
+<div style="margin-top: 20px;">
+  <!-- Toggle Button with WhatsApp Icon -->
+  <button type="button" onclick="showWhatsAppForm()" 
+    style="background-color: #25D366; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#fff" viewBox="0 0 24 24">
+      <path d="M20.52 3.48A11.9 11.9 0 0 0 12 0C5.37 0 0 5.37 0 12a11.91 11.91 0 0 0 1.61 6L0 24l6.22-1.63A11.91 11.91 0 0 0 12 24c6.63 0 12-5.37 12-12 0-3.19-1.24-6.19-3.48-8.52zM12 22c-1.87 0-3.68-.49-5.28-1.41l-.38-.22-3.69.97.99-3.58-.25-.39C2.49 15.68 2 13.87 2 12 2 6.49 6.49 2 12 2s10 4.49 10 10-4.49 10-10 10zm5.4-7.6c-.29-.15-1.71-.85-1.97-.95s-.46-.15-.65.15-.75.95-.92 1.14-.34.22-.63.07a8.5 8.5 0 0 1-2.49-1.53 9.46 9.46 0 0 1-1.75-2.16c-.18-.31 0-.48.14-.63.15-.15.33-.37.48-.55.15-.19.19-.33.29-.55.1-.22.05-.41-.02-.56s-.65-1.55-.9-2.11c-.24-.56-.48-.49-.65-.5h-.55c-.19 0-.48.07-.73.33a3.04 3.04 0 0 0-1 2.27c0 1.33.96 2.62 1.1 2.8.15.18 1.88 2.88 4.55 4.03 2.66 1.15 2.66.76 3.14.71.48-.05 1.57-.64 1.79-1.25.22-.61.22-1.14.16-1.25-.06-.1-.27-.18-.56-.33z"/>
+    </svg>
+  </button>
+
+  <!-- WhatsApp Order Form -->
+  <form id="whatsappOrderForm" action="/whatsapp-order" method="POST"
+    style="display: none; margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
+
+    <input type="hidden" name="productId" value="<%= product._id %>">
+
+    <div style="margin-bottom: 10px;">
+      <label for="waName" style="display: block; font-weight: bold;">Your Name:</label>
+      <input value="<%= user ? user.name : ''%>" type="text" name="name" id="waName" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label for="waPhone" style="display: block; font-weight: bold;">Contact:</label>
+      <input type="text" name="phone" id="waPhone" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label for="waDistrict" style="display: block; font-weight: bold;">Delivery District:</label>
+      <input type="text" name="district" id="waDistrict" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label for="waQuantity" style="display: block; font-weight: bold;">Quantity:</label>
+      <input type="number" name="quantity" id="waQuantity" value="1" min="1" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+    </div>
+
+    <button type="submit" style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+      Order via WhatsApp
+    </button>
+  </form>
+</div>
+
+<!-- Smooth scroll script -->
+<script>
+  function showWhatsAppForm() {
+    const form = document.getElementById('whatsappOrderForm');
+    form.style.display = 'block';
+    setTimeout(() => {
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+</script>
   </div>
 </section>
   
@@ -62,7 +118,14 @@
     thumbnails.forEach(thumb => {
       thumb.addEventListener('click', () => {
         mainImage.src = thumb.src;
-      });
+mainImage.dataset.fullUrl = `/products/product/view-image?url=${encodeURIComponent(thumb.src)}`;      });
+    });
+
+    mainImage.addEventListener('click', () => {
+      const fullUrl = mainImage.dataset.fullUrl;
+      if (fullUrl) {
+        window.location.href = fullUrl;
+      }
     });
   });
 </script>

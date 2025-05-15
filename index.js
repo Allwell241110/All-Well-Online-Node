@@ -32,6 +32,7 @@ app.use(session({
 }));
 app.use((req, res, next) => {
   res.locals.user = req.session.user;
+  req.user = req.session.user
   next();
 });
 
@@ -39,6 +40,9 @@ app.use((req, res, next) => {
   res.locals.originalUrl = req.originalUrl;
   next();
 });
+
+const metaCategoryMiddleware = require('./middleware/metaCategories');
+app.use(metaCategoryMiddleware);
 
 app.use(methodOverride('_method'));
 
@@ -80,6 +84,9 @@ app.use('/products/constant', constantProductRoutes);
 const dynamicProductRoutes = require('./routes/products/dynamic');
 app.use('/products', dynamicProductRoutes);
 
+const bulkUploadRoute = require('./routes/products/bulkUpload');
+app.use('/upload-csv', bulkUploadRoute);
+
 
 //Cart Routes:
 const cartRoutes = require('./routes/cart/dynamic');
@@ -94,6 +101,14 @@ app.use('/auth', dynamicAuthRoutes);
 //Checkout routes:
 const checkoutRoutes = require('./routes/checkout/checkout');
 app.use('/checkout', checkoutRoutes);
+
+//Order routes
+const orderRoutes = require('./routes/order/order');
+app.use('/orders', orderRoutes);
+
+//Whatsapp Order routes
+const whatsAppRoutes = require('./routes/whatsApp/whatsApp');
+app.use('/whatsapp-order', whatsAppRoutes);
 
 
 //Home Route:

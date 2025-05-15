@@ -1,11 +1,24 @@
-<form method="GET" action="/products" class="product-filters">
-  
+<% const basePath = originalUrl.split('?')[0]; %>
+
+<form method="GET" action="<%= basePath %>" class="product-filters">
   <select name="sort">
     <option value="">Sort By</option>
     <option value="price-asc" <%= sort === 'price-asc' ? 'selected' : '' %>>Price: Low to High</option>
     <option value="price-desc" <%= sort === 'price-desc' ? 'selected' : '' %>>Price: High to Low</option>
     <option value="latest" <%= sort === 'latest' ? 'selected' : '' %>>Newest</option>
   </select>
+
+  <% if (searchQuery) { %>
+    <input type="hidden" name="search" value="<%= searchQuery %>">
+  <% } %>
+
+  <% if (limit) { %>
+    <input type="hidden" name="limit" value="<%= limit %>">
+  <% } %>
+
+  <% if (currentPage) { %>
+    <input type="hidden" name="page" value="<%= currentPage %>">
+  <% } %>
 
   <button type="submit">Apply</button>
 </form>

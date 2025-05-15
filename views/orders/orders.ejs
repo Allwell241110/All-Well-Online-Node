@@ -1,0 +1,51 @@
+<div class="order-list-container">
+  <h1>My Orders</h1>
+
+  <% if (orders.length === 0) { %>
+    <p>You have no orders yet.</p>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="order-list-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Total (UGX)</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% orders.forEach(order => { %>
+            <tr>
+              <td class="order-id-cell">
+                <div class="order-id-wrapper">
+                  <span class="order-id-text"><%= order._id %></span>
+                  <button class="toggle-id-btn" title="Toggle ID">▼</button>
+                </div>
+              </td>
+              <td><%= new Date(order.createdAt).toLocaleDateString() %></td>
+              <td><%= order.total.toLocaleString() %></td>
+              <td><%= order.status || 'Pending' %></td>
+              <td>
+                <a href="/orders/<%= order._id %>" class="view-link">View Details</a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.toggle-id-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        const cell = button.closest('.order-id-cell');
+        cell.classList.toggle('expanded');
+        button.textContent = cell.classList.contains('expanded') ? '▲' : '▼';
+      });
+    });
+  });
+</script>

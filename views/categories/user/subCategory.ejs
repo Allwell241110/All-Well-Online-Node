@@ -1,0 +1,13 @@
+  <%- include('../../partials/categories/cards', { categories: subcategories,
+    main
+  }) %>
+  
+  
+<%- include('../../products/products', {
+  products: mainCategoryProducts,
+  sort,
+  searchQuery,
+  currentPage,
+  limit,
+  totalPages
+}) %>
