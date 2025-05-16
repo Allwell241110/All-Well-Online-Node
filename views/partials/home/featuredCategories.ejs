@@ -1,0 +1,15 @@
+<section class="featured-categories">
+  <div class="featured-categories__container">
+    <h2 class="featured-categories__title">Featured Categories</h2>
+    <div class="featured-categories__grid">
+      <% featuredCategories.forEach(category => { %>
+        <div class="featured-categories__card" data-id="<%= category.name %>">
+          <div class="featured-categories__image-wrapper">
+            <img src="<%= category.image?.url %>" alt="<%= category.name %>" class="featured-categories__image" />
+          </div>
+          <h3 class="featured-categories__name"><%= category.name %></h3>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>

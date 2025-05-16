@@ -2,8 +2,11 @@ const Product = require('../../models/Product');
 const WhatsAppOrder = require('../../models/WhatsAppOrder');
 
 
+
 const express = require('express');
 const router = express.Router();
+
+const logUserActivity = require('../../utils/logUserActivity');
 
 router.post('/', async (req, res) => {
   const { name, phone, district, quantity, productId } = req.body;
@@ -12,14 +15,20 @@ router.post('/', async (req, res) => {
     return res.status(400).send('Missing required fields');
   }
 
+  const userId = req.session?.user?._id || null;
+  const sessionId = req.sessionID;
+  const pageUrl = req.originalUrl;
+  const referrer = req.get('Referrer') || '';
+  const userAgent = req.get('User-Agent') || '';
+  const ipAddress = req.ip;
+
   try {
-    // Fetch the product
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).send('Product not found');
     }
 
-    // Determine price to display
+    // Determine display price
     let price = product.salePrice || product.price;
     if (product.variants?.length) {
       const prices = product.variants.map(v => !isNaN(v.salePrice) ? v.salePrice : v.price);
@@ -31,7 +40,7 @@ router.post('/', async (req, res) => {
       price = `UGX ${price.toLocaleString()}`;
     }
 
-    // Store the order (optional)
+    // Save the order
     const order = new WhatsAppOrder({
       name,
       phone,
@@ -45,7 +54,25 @@ router.post('/', async (req, res) => {
     });
     await order.save();
 
-    // Build WhatsApp message
+    // Log user activity
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'submitted_whatsApp_order',
+      pageUrl,
+      referrer,
+      userAgent,
+      ipAddress,
+      metadata: {
+        name,
+        phone,
+        district,
+        quantity,
+        productId,
+        productName: product.name
+      }
+    });
+
     const businessNumber = process.env.BUSINESS_NUMBER;
     const message = `Hello, I'd like to order:
 
@@ -60,7 +87,7 @@ router.post('/', async (req, res) => {
     res.redirect(waURL);
 
   } catch (err) {
-    console.error(err);
+    console.error('Error during WhatsApp order:', err);
     res.status(500).send('Server error');
   }
 });

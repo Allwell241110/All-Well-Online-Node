@@ -3,21 +3,18 @@ function isUser(req, res, next) {
   if (req.session.user && req.session.user.role === 'user') {
     return next();
   }
-  return res.status(403).render('auth/login', {
-    title: 'Login',
-    error: '',
-    message: 'Access denied: Users only' });
+
+  req.session.returnTo = req.originalUrl;
+  return res.redirect('/auth/login');
 }
 
-// isAdmin middleware: allow only admins
 function isAdmin(req, res, next) {
   if (req.session.user && req.session.user.role === 'admin') {
     return next();
   }
-  return res.status(403).render('auth/login', {
-    title: 'Login',
-    error: '',
-    message: 'Access denied: Admin only' });
+
+  req.session.returnTo = req.originalUrl;
+  return res.redirect('/auth/login');
 }
 
 // isGuest middleware: allow only non-logged-in users
@@ -25,10 +22,11 @@ function isGuest(req, res, next) {
   if (req.session.user) {
     return next();
   }
-  return res.status(403).render('auth/login', {
-    title: 'Login',
-    error: '',
-    message: 'Access denied:  Kindly Login' });
+
+  // Save original URL before redirecting
+  req.session.returnTo = req.originalUrl;
+
+  return res.redirect('/auth/login');
 }
 
 module.exports = {

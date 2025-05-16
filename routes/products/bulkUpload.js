@@ -5,6 +5,7 @@ const { Readable } = require('stream');
 const axios = require('axios');
 const Product = require('../../models/Product');
 const SubCategory = require('../../models/SubCategory');
+const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
 const router = express.Router();
 const upload = multer();
@@ -34,7 +35,7 @@ const fetchImageBuffer = async (url) => {
   return Buffer.from(res.data);
 };
 
-router.post('/', upload.single('csvFile'), async (req, res) => {
+router.post('/', isAdmin, upload.single('csvFile'), async (req, res) => {
   try {
     console.log('--- Starting CSV Import ---');
     const csvFile = req.file;
@@ -165,7 +166,7 @@ router.post('/', upload.single('csvFile'), async (req, res) => {
   }
 });
 
-router.get('/', (req, res) => {
+router.get('/', isAdmin, (req, res) => {
   res.render('products/bulkUpload', {
     title: 'Upload CSV Products',
     message: ''

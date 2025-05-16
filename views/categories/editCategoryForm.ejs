@@ -1,69 +1,96 @@
-<!-- Edit Meta Category Form -->
-
 <main class="cat-main">
-  <form action="/categories/meta/<%= meta._id %>/update" method="POST">
-  <h2>Edit Meta Category</h2>
-  <label>Meta Category Name</label>
-  <input type="text" name="metaName" value="<%= meta.name %>" required>  <hr>  <h3>Main Categories</h3>
-  <div id="main-list">
-    <% mains.forEach(main => { %>
-      <div class="main-group">
-        <input type="hidden" name="mainIds[]" value="<%= main._id %>">
-        <input type="text" name="mainNames[]" value="<%= main.name %>" required>
-        <button type="button" onclick="removeMain(this, '<%= main._id %>')">Delete Main</button><div class="sub-list">
-      <% if (subsGroupedByMain[main._id]) { %>
-        <% subsGroupedByMain[main._id].forEach(sub => { %>
-          <div class="sub-group">
-            <input type="hidden" name="subIds[<%= main._id %>][]" value="<%= sub._id %>">
-            <input type="text" name="subNames[<%= main._id %>][]" value="<%= sub.name %>" required>
-            <button type="button" onclick="this.parentElement.remove()">Remove Sub</button>
+  <form action="/categories/meta/<%= meta._id %>/update" method="POST" enctype="multipart/form-data">
+    <h2>Edit Meta Category</h2>
+    <label>Meta Category Name</label>
+    <input type="text" name="metaName" value="<%= meta.name %>" required>
+    <hr>
+
+    <h3>Main Categories</h3>
+    <div id="main-list">
+      <% mains.forEach(main => { %>
+        <div class="main-group" data-main-id="<%= main._id %>">
+          <input type="hidden" name="mainIds[]" value="<%= main._id %>">
+          <input type="text" name="mainNames[]" value="<%= main.name %>" required>
+          <button type="button" onclick="removeMain(this, '<%= main._id %>')">Delete Main</button>
+
+          <div class="sub-list">
+            <% (subsGroupedByMain[main._id] || []).forEach((sub, index) => { %>
+              <div class="sub-group" data-sub-id="<%= sub._id %>">
+                <input type="hidden" name="subIds[<%= main._id %>][]" value="<%= sub._id %>">
+                <input type="text" name="subNames[<%= main._id %>][]" value="<%= sub.name %>" required>
+                <input type="file" name="subImages[<%= main._id %>][]" accept="image/*" onchange="previewSubImage(this)">
+                <% if (sub.image?.url) { %>
+                  <img src="<%= sub.image.url %>" class="sub-image-preview" style="height: 80px; display:block; margin-top:5px;">
+                <% } else { %>
+                  <img class="sub-image-preview" style="height: 80px; display:none; margin-top:5px;">
+                <% } %>
+                <button type="button" onclick="this.parentElement.remove()">Remove Sub</button>
+              </div>
+            <% }) %>
           </div>
-        <% }) %>
-      <% } %>
+          <button type="button" onclick="addSub(this, '<%= main._id %>')">+ Add Sub</button>
+        </div>
+      <% }) %>
     </div>
 
-    <button type="button" onclick="addSub(this, '<%= main._id %>')">+ Add Sub</button>
-  </div>
-<% }) %>
-
-  </div><button type="button" onclick="addMain()">+ Add Main</button>
-
-  <input type="hidden" name="deletedMainIds" id="deletedMainIds">
-  <hr>
-  <button type="submit">Save Changes</button>
-</form>
+    <button type="button" onclick="addMain()">+ Add Main</button>
+    <input type="hidden" name="deletedMainIds" id="deletedMainIds">
+    <hr>
+    <button type="submit">Save Changes</button>
+  </form>
 </main>
+
 <script>
   const deletedMainIds = [];
 
   function removeMain(btn, mainId) {
     deletedMainIds.push(mainId);
     document.getElementById('deletedMainIds').value = deletedMainIds.join(',');
-    btn.parentElement.remove();
-  }
-
-  function addSub(btn, mainId) {
-    const container = document.createElement('div');
-    container.classList.add('sub-group');
-    container.innerHTML = `
-      <input type="hidden" name="subIds[${mainId}][]" value="new">
-      <input type="text" name="subNames[${mainId}][]" placeholder="New sub category" required>
-      <button type="button" onclick="this.parentElement.remove()">Remove</button>
-    `;
-    btn.parentElement.querySelector('.sub-list').appendChild(container);
+    btn.closest('.main-group').remove();
   }
 
   function addMain() {
-    const uniqueId = 'main_' + Date.now();
-    const container = document.createElement('div');
-    container.classList.add('main-group');
-    container.innerHTML = `
+    const uniqueId = 'new_' + Date.now();
+    const mainDiv = document.createElement('div');
+    mainDiv.classList.add('main-group');
+    mainDiv.dataset.mainId = uniqueId;
+
+    mainDiv.innerHTML = `
       <input type="hidden" name="mainIds[]" value="new">
       <input type="text" name="mainNames[]" placeholder="New main category" required>
       <button type="button" onclick="removeMain(this, '${uniqueId}')">Remove Main</button>
       <div class="sub-list"></div>
       <button type="button" onclick="addSub(this, '${uniqueId}')">+ Add Sub</button>
     `;
-    document.getElementById('main-list').appendChild(container);
+    document.getElementById('main-list').appendChild(mainDiv);
+  }
+
+  function addSub(btn, mainId) {
+    const subDiv = document.createElement('div');
+    subDiv.classList.add('sub-group');
+    subDiv.innerHTML = `
+      <input type="hidden" name="subIds[${mainId}][]" value="new">
+      <input type="text" name="subNames[${mainId}][]" placeholder="New sub category" required>
+      <input type="file" name="subImages[${mainId}][]" accept="image/*" onchange="previewSubImage(this)">
+      <img class="sub-image-preview" style="height: 80px; display:none; margin-top:5px;">
+      <button type="button" onclick="this.parentElement.remove()">Remove Sub</button>
+    `;
+    btn.parentElement.querySelector('.sub-list').appendChild(subDiv);
+  }
+
+  function previewSubImage(input) {
+    const preview = input.nextElementSibling;
+    const file = input.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      preview.src = '';
+      preview.style.display = 'none';
+    }
   }
 </script>

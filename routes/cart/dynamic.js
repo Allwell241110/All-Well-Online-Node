@@ -12,60 +12,48 @@ router.get('/', (req, res) => {
   });
 });
 
+
+const logUserActivity = require('../../utils/logUserActivity');
 // Add product to cart
 router.post('/add', async (req, res) => {
   try {
     const { productId, variantId } = req.body;
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userId = req.user ? req.user._id : null;
 
     console.log('Received productId:', productId, 'variantId:', variantId);
 
-    // Fetch the product from the database
     const product = await Product.findById(productId);
     if (!product) {
       console.error('Product not found:', productId);
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    console.log('Product found:', product);
-
-    // Default price and image
     let finalPrice = product.salePrice || product.price;
     let variantName = null;
     let image = product.images[0]?.url || '';
     let variantImage = null;
 
-    // If variantId is provided, find the variant
-    if (variantId && product.variants && product.variants.length > 0) {
+    if (variantId && product.variants?.length) {
       const selectedVariant = product.variants.find(v => v._id.toString() === variantId);
       if (!selectedVariant) {
         console.error('Variant not found:', variantId);
         return res.status(400).json({ message: 'Variant not found' });
       }
 
-      console.log('Selected variant:', selectedVariant);
-
-      // Use variant price or fallback
       finalPrice = selectedVariant.salePrice || selectedVariant.price || finalPrice;
       variantName = selectedVariant.name;
 
-      // Use variant image if available
-      if (selectedVariant.image.url) {
+      if (selectedVariant.image?.url) {
         image = selectedVariant.image.url;
         variantImage = selectedVariant.image.url;
       }
-
-      console.log('Final price after variant:', finalPrice, 'Variant name:', variantName, 'Image:', image);
-    } else {
-      console.log('No variant selected, using default price and image.');
     }
 
-    // Initialize cart if not present
     if (!req.session.cart) {
       req.session.cart = [];
-      console.log('Cart initialized');
     }
 
-    // Check if item already exists in the cart
     const existingIndex = req.session.cart.findIndex(item =>
       item.productId === productId &&
       item.variantId === (variantId || null)
@@ -73,7 +61,6 @@ router.post('/add', async (req, res) => {
 
     if (existingIndex !== -1) {
       req.session.cart[existingIndex].quantity += 1;
-      console.log('Item already in cart, incremented quantity');
     } else {
       req.session.cart.push({
         productId,
@@ -85,8 +72,25 @@ router.post('/add', async (req, res) => {
         image,
         variantImage
       });
-      console.log('New item added to cart:', req.session.cart);
     }
+
+    // Log the activity
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'add_to_cart',
+      pageUrl: req.originalUrl,
+      referrer: req.get('Referrer') || '',
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip,
+      metadata: {
+        productId,
+        variantId: variantId || null,
+        variantName,
+        name: product.name,
+        price: finalPrice
+      }
+    });
 
     res.status(200).json({ message: 'Product added to cart' });
   } catch (err) {
@@ -127,7 +131,7 @@ router.post('/update', (req, res) => {
 });
 
 // Remove product from cart
-router.post('/remove', (req, res) => {
+router.post('/remove', async (req, res) => {
   const { productId, variantId } = req.body;
 
   if (!req.session.cart) {
@@ -136,9 +140,38 @@ router.post('/remove', (req, res) => {
 
   const normalizedVariantId = variantId ? String(variantId) : null;
 
+  // Find the item being removed (for logging metadata)
+  const removedItem = req.session.cart.find(item =>
+    item.productId === productId && String(item.variantId) === String(normalizedVariantId)
+  );
+
+  // Filter it out from the cart
   req.session.cart = req.session.cart.filter(item =>
     !(item.productId === productId && String(item.variantId) === String(normalizedVariantId))
   );
+
+  // Log the activity if item was found
+  if (removedItem) {
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userId = req.user ? req.user._id : null;
+
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'remove_from_cart',
+      pageUrl: req.originalUrl,
+      referrer: req.get('Referrer') || '',
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip,
+      metadata: {
+        productId: removedItem.productId,
+        variantId: removedItem.variantId,
+        variantName: removedItem.variantName,
+        name: removedItem.name,
+        price: removedItem.price
+      }
+    });
+  }
 
   res.redirect('/cart');
 });

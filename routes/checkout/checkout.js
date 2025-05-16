@@ -8,9 +8,28 @@ const DeliveryAddress = require('../../models/DeliveryAddress');
 const District = require('../../models/District');
 const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
+const logUserActivity = require('../../utils/logUserActivity');
+
 router.get('/', async (req, res) => {
   try {
-    const districts = await District.find().sort({ name: 1 }); // Optional: sort alphabetically
+    const districts = await District.find().sort({ name: 1 });
+
+    // Log user activity: visiting checkout
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userId = req.user ? req.user._id : null;
+
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'view_checkout',
+      pageUrl: req.originalUrl,
+      referrer: req.get('Referrer') || '',
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip,
+      metadata: {
+        cartItemsCount: req.session.cart ? req.session.cart.length : 0
+      }
+    });
 
     res.render('checkout/shippingInformation', {
       title: 'Checkout',
@@ -39,12 +58,15 @@ router.post('/', async (req, res) => {
   try {
     let user;
 
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userAgent = req.get('User-Agent') || '';
+    const ipAddress = req.ip;
+    const referrer = req.get('Referrer') || '';
+    
     if (!userId) {
-      // Guest user: check if a guest exists using phone or email
       user = await User.findOne({ $or: [{ email }, { phoneNumber: phone }] });
 
       if (!user) {
-        // Create a new guest user if not found
         user = new User({
           name,
           phoneNumber: phone,
@@ -52,11 +74,19 @@ router.post('/', async (req, res) => {
           role: 'guest',
         });
         await user.save();
+
+        await logUserActivity({
+          userId: user._id,
+          sessionId,
+          activityType: 'guest_created',
+          pageUrl: req.originalUrl,
+          userAgent,
+          ipAddress,
+          metadata: { phone, email }
+        });
       }
 
       userId = user._id;
-
-      // Store the user in session
       req.session.user = {
         _id: userId,
         name: user.name,
@@ -65,17 +95,15 @@ router.post('/', async (req, res) => {
       };
 
     } else {
-      // Logged in user
       user = await User.findById(userId);
 
-      // Update missing phone number if not already set
       if (!user.phoneNumber && phone) {
         user.phoneNumber = phone;
         await user.save();
       }
     }
 
-    // Check if the user already has a delivery address
+    // Save or update address
     let address = await DeliveryAddress.findOne({ user: userId });
     if (!address) {
       address = new DeliveryAddress({
@@ -86,15 +114,45 @@ router.post('/', async (req, res) => {
       });
       await address.save();
     } else {
-      // Update address if needed
       address.district = deliveryAddress.district;
       address.village = deliveryAddress.village;
       address.street = deliveryAddress.street;
       await address.save();
     }
 
+    // Log shipping info saved
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'shipping_info_saved',
+      pageUrl: req.originalUrl,
+      userAgent,
+      ipAddress,
+      referrer,
+      metadata: {
+        district: deliveryAddress.district,
+        village: deliveryAddress.village || '',
+        hasEmail: !!email
+      }
+    });
+
     const district = deliveryAddress.district;
     const allowCOD = ['Kampala', 'Wakiso'].includes(district);
+
+    // Log that user proceeded to payment
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'proceeded_to_payment',
+      pageUrl: '/checkout/payment',
+      userAgent,
+      ipAddress,
+      metadata: {
+        district,
+        allowCOD,
+        cartSize: req.session.cart ? req.session.cart.length : 0
+      }
+    });
 
     res.render('checkout/payment', {
       title: 'Payment Information',
@@ -131,6 +189,28 @@ router.post('/confirm', isGuest, async (req, res) => {
       return res.status(404).send('Delivery address not found.');
     }
 
+    // Log confirm step reached
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userAgent = req.get('User-Agent') || '';
+    const ipAddress = req.ip;
+    const referrer = req.get('Referrer') || '';
+
+    await logUserActivity({
+      userId: user._id,
+      sessionId,
+      activityType: 'reached_order_confirmation',
+      pageUrl: req.originalUrl,
+      userAgent,
+      ipAddress,
+      referrer,
+      metadata: {
+        deliveryFee: Number(deliveryFee),
+        paymentMethod,
+        cartSize: cart.length,
+        district: deliveryAddress.district
+      }
+    });
+
     res.render('checkout/confirm', {
       title: 'Confirm Your Order',
       cart,
@@ -138,6 +218,7 @@ router.post('/confirm', isGuest, async (req, res) => {
       paymentMethod,
       deliveryAddress
     });
+
   } catch (error) {
     console.error('Error fetching delivery address:', error);
     res.status(500).send('Server error while confirming order.');
@@ -196,6 +277,32 @@ router.post('/process', isGuest, async (req, res) => {
     }
 
     await order.save();
+
+// Log order placed
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userAgent = req.get('User-Agent') || '';
+    const ipAddress = req.ip;
+    const referrer = req.get('Referrer') || '';
+
+    await logUserActivity({
+      userId: user._id,
+      sessionId,
+      activityType: 'order_placed',
+      pageUrl: req.originalUrl,
+      userAgent,
+      ipAddress,
+      referrer,
+      metadata: {
+      orderId: order._id,
+      total: order.total,
+      itemsCount: cart.length,
+      paymentMethod,
+      paymentStatus: order.paymentStatus,
+      momoNumber: paymentMethod === 'prepaid' ? momoNumber : undefined,
+      district: address.district
+  }
+});
+
     req.session.cart = [];
 
     if (paymentMethod === 'prepaid') {
@@ -283,6 +390,29 @@ router.post('/retry-payment', isGuest, async (req, res) => {
     );
 
     console.log('Retry payment request sent for order:', orderId);
+    
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userAgent = req.get('User-Agent') || '';
+    const ipAddress = req.ip;
+    const referrer = req.get('Referrer') || '';
+    const userId = req.session.user?._id || order.userId;
+
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'retry_payment',
+      pageUrl: req.originalUrl,
+      userAgent,
+      ipAddress,
+      referrer,
+      metadata: {
+        orderId: order._id,
+        total: order.total,
+        momoNumber: order.momoNumber,
+        previousStatus: order.paymentStatus
+      }
+    });
+    
     res.render('checkout/paymentPending', {
       title: 'Processing Payment',
       orderId });
@@ -292,9 +422,6 @@ router.post('/retry-payment', isGuest, async (req, res) => {
     res.status(500).send('Failed to retry payment. Try again later.');
   }
 });
-
-
-
 
 
 module.exports = router;

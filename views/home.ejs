@@ -2,7 +2,10 @@
   <div class="home-container">
     
     <!-- Banner Slider -->
-
+    <%- include('./partials/home/hero') %>
+    <%- include('./partials/home/featuredCategories') %>
+    <%- include('./partials/home/hotDeals') %>
+    
       
     <!-- featured-categories -->
    
@@ -12,4 +15,40 @@
 
   </div>
 
-<script></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const cards = document.querySelectorAll('.hero__product-card');
+
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      const productId = card.getAttribute('data-id');
+      window.location.href = `/products/${productId}`;
+    });
+  });
+});
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+  const categoryCards = document.querySelectorAll('.featured-categories__card');
+
+  categoryCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const categoryId = card.getAttribute('data-id');
+      window.location.href = `/categories/products/${categoryId}`;
+    });
+  });
+});
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+  const dealCards = document.querySelectorAll('.hot-deals__card');
+
+  dealCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const productId = card.getAttribute('data-id');
+      const encodedId = encodeURIComponent(productId);
+      window.location.href = `/products/${encodedId}`;
+    });
+  });
+});
+</script>

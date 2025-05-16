@@ -22,10 +22,27 @@ router.get('/', isGuest, async (req, res) => {
 });
 
 // GET /orders/:id
+const logUserActivity = require('../../utils/logUserActivity');
+
 router.get('/:id', isGuest, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).lean();
     if (!order) return res.status(404).send('Order not found');
+
+    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+    const userId = req.user ? req.user._id : null;
+
+    // Log viewed order details
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'viewed_order_details',
+      pageUrl: req.originalUrl,
+      referrer: req.get('Referrer') || '',
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip,
+      metadata: { orderId: order._id, paymentStatus: order.paymentStatus }
+    });
 
     // Only check MoMo status if prepaid and still not paid
     if (order.paymentMethod === 'prepaid' && order.paymentStatus !== 'Paid') {
@@ -62,16 +79,34 @@ router.get('/:id', isGuest, async (req, res) => {
           }
         );
 
-        // Reload order with fresh values
+        // Reload order with updated values
         Object.assign(order, {
           paymentStatus,
-          transactionId: response.data.financialTransactionId || order.transactionId,
+          transactionId: momoStatus === 'SUCCESSFUL' ? response.data.financialTransactionId : order.transactionId,
           transactions: order.transactions.map(tx =>
             tx.externalId === latestTx.externalId
               ? { ...tx, status: momoStatus }
               : tx
           )
         });
+
+        // Log successful payment
+        if (momoStatus === 'SUCCESSFUL') {
+          await logUserActivity({
+            userId,
+            sessionId,
+            activityType: 'successful_payment',
+            pageUrl: req.originalUrl,
+            referrer: req.get('Referrer') || '',
+            userAgent: req.get('User-Agent') || '',
+            ipAddress: req.ip,
+            metadata: {
+              orderId: order._id,
+              amount: latestTx.amount,
+              transactionId: response.data.financialTransactionId
+            }
+          });
+        }
       }
     }
 

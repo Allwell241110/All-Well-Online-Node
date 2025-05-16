@@ -1,0 +1,26 @@
+<section class="hot-deals">
+  <div class="hot-deals__container">
+    <h2 class="hot-deals__title">Hot Deals</h2>
+    <div class="hot-deals__grid">
+      <% hotDeals.forEach(product => { 
+        const discount = product.salePrice && product.price ? Math.round(100 * (product.price - product.salePrice) / product.price) : 0;
+      %>
+        <div class="hot-deals__card" data-id="<%= product.name %>">
+          <div class="hot-deals__image-wrapper">
+            <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hot-deals__image" />
+            <% if (discount > 0) { %>
+              <span class="hot-deals__badge">-<%= discount %>%</span>
+            <% } %>
+          </div>
+          <div class="hot-deals__info">
+            <h3 class="hot-deals__name"><%= product.name %></h3>
+            <p class="hot-deals__price">
+              <span class="hot-deals__sale-price">UGX <%= product.salePrice %></span>
+              <span class="hot-deals__original-price">UGX <%= product.price %></span>
+            </p>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>

@@ -44,6 +44,9 @@ app.use((req, res, next) => {
 const metaCategoryMiddleware = require('./middleware/metaCategories');
 app.use(metaCategoryMiddleware);
 
+const pageViewActivityMiddleware = require('./middleware/pageViewActivity');
+app.use(pageViewActivityMiddleware);
+
 app.use(methodOverride('_method'));
 
 app.set('view engine', 'ejs');
@@ -110,6 +113,9 @@ app.use('/orders', orderRoutes);
 const whatsAppRoutes = require('./routes/whatsApp/whatsApp');
 app.use('/whatsapp-order', whatsAppRoutes);
 
+//User Activity routes
+const userActivityRoutes = require('./routes/userActivity/userActivity');
+app.use('/user-activity', userActivityRoutes);
 
 //Home Route:
 const homeRoute = require('./routes/home/constant');

@@ -7,6 +7,7 @@ const MetaCategory = require('../../models/MetaCategory');
 const MainCategory = require('../../models/MainCategory');
 const SubCategory = require('../../models/SubCategory');
 require('dotenv').config();
+const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -50,7 +51,7 @@ function isBase64(str) {
   }
 }
 
-router.post('/', upload.any(), async (req, res) => {
+router.post('/', isAdmin, upload.any(), async (req, res) => {
   try {
     console.log('--- Incoming Request ---');
     console.log('Fields:', req.body);
@@ -225,28 +226,53 @@ router.get('/', async (req, res) => {
   }
 });
 
+const logUserActivity = require('../../utils/logUserActivity');
+
 router.get('/:name', async (req, res) => {
   try {
     const productName = req.params.name;
 
     // Find product by name (case-insensitive)
     const product = await Product.findOne({ name: new RegExp(`^${productName}$`, 'i') });
-
     if (!product) {
       return res.status(404).render('404', { message: 'Product not found' });
     }
-    
-    function isBase64(str) {
-  try {
-    return Buffer.from(str, 'base64').toString('base64') === str;
-  } catch (err) {
-    return false;
-  }
-}
 
-if (isBase64(product.description)) {
-  product.description = Buffer.from(product.description, 'base64').toString('utf-8');
-}
+    // Decode description if it's Base64
+    function isBase64(str) {
+      try {
+        return Buffer.from(str, 'base64').toString('base64') === str;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    if (isBase64(product.description)) {
+      product.description = Buffer.from(product.description, 'base64').toString('utf-8');
+    }
+
+    // Prepare activity logging
+    const userId = req.session?.user?._id || null;
+    const sessionId = req.sessionID;
+    const pageUrl = req.originalUrl;
+    const referrer = req.get('Referrer') || '';
+    const userAgent = req.get('User-Agent') || '';
+    const ipAddress = req.ip;
+
+    await logUserActivity({
+      userId,
+      sessionId,
+      activityType: 'viewed_product',
+      pageUrl,
+      referrer,
+      userAgent,
+      ipAddress,
+      metadata: {
+        productId: product._id,
+        productName: product.name,
+        price: product.salePrice || product.price,
+      }
+    });
 
     res.render('products/product', {
       title: `${product.name} - All Well Online`,
@@ -259,7 +285,7 @@ if (isBase64(product.description)) {
   }
 });
 
-router.get('/edit/:productId', async (req, res) => {
+router.get('/edit/:productId', isAdmin, async (req, res) => {
   const variants = req.query.variants === 'true';
   try {
     const { productId } = req.params;
@@ -294,7 +320,7 @@ router.get('/edit/:productId', async (req, res) => {
   }
 });
 
-router.put('/:productId', upload.any(), async (req, res) => {
+router.put('/:productId', isAdmin, upload.any(), async (req, res) => {
   try {
     const { productId } = req.params;
     const {
@@ -462,7 +488,7 @@ router.put('/:productId', upload.any(), async (req, res) => {
   }
 });
 
-router.delete('/:productId', async (req, res) => {
+router.delete('/:productId', isAdmin, async (req, res) => {
   try {
     const { productId } = req.params;
 

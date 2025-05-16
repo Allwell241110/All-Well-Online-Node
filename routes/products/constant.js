@@ -4,9 +4,10 @@ const router = express.Router();
 const MetaCategory = require('../../models/MetaCategory');
 const MainCategory = require('../../models/MainCategory');
 const SubCategory = require('../../models/SubCategory');
+const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
 
-router.get('/product-nature', (req, res) => {
+router.get('/product-nature', isAdmin, (req, res) => {
 
   res.render('products/productNature', {
 
@@ -14,7 +15,7 @@ router.get('/product-nature', (req, res) => {
   });
 });
 
-router.get('/add-product', async (req, res) => {
+router.get('/add-product', isAdmin, async (req, res) => {
   const variants = req.query.variants === 'true';
   try {
     const metaCategories = await MetaCategory.find();
