@@ -7,7 +7,7 @@
       %>
         <div class="hot-deals__card" data-id="<%= product.name %>">
           <div class="hot-deals__image-wrapper">
-            <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hot-deals__image" />
+            <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hot-deals__image" loading="lazy" />
             <% if (discount > 0) { %>
               <span class="hot-deals__badge">-<%= discount %>%</span>
             <% } %>

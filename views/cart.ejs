@@ -21,7 +21,7 @@
         %>
           <tr>
             <td class="product-info">
-              <img src="<%= item.variantImage || item.image %>" alt="<%= item.name %>">
+              <img src="<%= item.variantImage || item.image %>" alt="<%= item.name %>" loading="lazy">
               <div>
                 <span><%= item.name %></span>
                 <% if (item.variantName) { %>

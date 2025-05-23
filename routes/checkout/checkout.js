@@ -10,13 +10,31 @@ const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
 const logUserActivity = require('../../utils/logUserActivity');
 
+const sendEmail = require('../../utils/send-email');
+
+const { sendFacebookEvent } = require('../../utils/facebookCapi'); // Adjust path as needed
+require('dotenv').config(); // Load pixel ID and access token from .env
+
 router.get('/', async (req, res) => {
   try {
-    const districts = await District.find().sort({ name: 1 });
+    console.log('--- Checkout Page Requested ---');
 
-    // Log user activity: visiting checkout
+    const districts = await District.find().sort({ name: 1 });
+    console.log('Fetched districts:', districts.length);
+
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userId = req.user ? req.user._id : null;
+    const userEmail = req.user ? req.user.email : null;
+    const userPhone = req.user ? req.user.phone : null;
+    const username = req.user ? req.user.name : null;
+
+    console.log('Session ID:', sessionId);
+    console.log('User ID:', userId);
+    console.log('User Email:', userEmail);
+    console.log('User Phone:', userPhone);
+
+    const cartItemsCount = req.session.cart ? req.session.cart.length : 0;
+    console.log('Cart Items Count:', cartItemsCount);
 
     await logUserActivity({
       userId,
@@ -27,17 +45,40 @@ router.get('/', async (req, res) => {
       userAgent: req.get('User-Agent') || '',
       ipAddress: req.ip,
       metadata: {
-        cartItemsCount: req.session.cart ? req.session.cart.length : 0
+        cartItemsCount
       }
     });
+    console.log('Logged user activity.');
+
+    const totalPrice = req.session.cart?.reduce((sum, item) => sum + item.price * item.qty, 0) || 0;
+    console.log('Total checkout price:', totalPrice);
+
+    await sendFacebookEvent({
+      eventName: 'InitiateCheckout',
+      firstName: username,
+      email: userEmail,
+      phone: userPhone,
+      ip: req.ip,
+      userAgent: req.get('User-Agent') || '',
+      productId: 'checkout',
+      productName: 'Initiate Checkout',
+      price: totalPrice,
+      pixelId: process.env.FB_PIXEL_ID,
+      accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+      externalId: userId,
+      sourceUrl: req.originalUrl,
+    });
+    console.log('Facebook CAPI event sent.');
 
     res.render('checkout/shippingInformation', {
       title: 'Checkout',
       districts,
       error: ''
     });
+    console.log('Checkout page rendered successfully.');
   } catch (error) {
-    console.error('Failed to load districts:', error.message);
+    console.error('Failed to load checkout page:', error.message);
+    console.error('Full error:', error);
     res.status(500).send('Server error');
   }
 });
@@ -45,6 +86,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const { name, email, phone, deliveryAddress } = req.body;
   let userId = req.session.user ? req.session.user._id : req.body.userId;
+  
+  const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
+  const userAgent = req.get('User-Agent') || '';
 
   if (!name || !phone || !deliveryAddress?.district) {
     const districts = await District.find().sort({ name: 1 });
@@ -56,85 +100,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    let user;
-
-    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
-    const userAgent = req.get('User-Agent') || '';
-    const ipAddress = req.ip;
-    const referrer = req.get('Referrer') || '';
-    
-    if (!userId) {
-      user = await User.findOne({ $or: [{ email }, { phoneNumber: phone }] });
-
-      if (!user) {
-        user = new User({
-          name,
-          phoneNumber: phone,
-          email: email || undefined,
-          role: 'guest',
-        });
-        await user.save();
-
-        await logUserActivity({
-          userId: user._id,
-          sessionId,
-          activityType: 'guest_created',
-          pageUrl: req.originalUrl,
-          userAgent,
-          ipAddress,
-          metadata: { phone, email }
-        });
-      }
-
-      userId = user._id;
-      req.session.user = {
-        _id: userId,
-        name: user.name,
-        email: user.email,
-        role: 'guest',
-      };
-
-    } else {
-      user = await User.findById(userId);
-
-      if (!user.phoneNumber && phone) {
-        user.phoneNumber = phone;
-        await user.save();
-      }
-    }
-
-    // Save or update address
-    let address = await DeliveryAddress.findOne({ user: userId });
-    if (!address) {
-      address = new DeliveryAddress({
-        user: userId,
-        district: deliveryAddress.district,
-        village: deliveryAddress.village,
-        street: deliveryAddress.street,
-      });
-      await address.save();
-    } else {
-      address.district = deliveryAddress.district;
-      address.village = deliveryAddress.village;
-      address.street = deliveryAddress.street;
-      await address.save();
-    }
-
-    // Log shipping info saved
-    await logUserActivity({
-      userId,
-      sessionId,
-      activityType: 'shipping_info_saved',
-      pageUrl: req.originalUrl,
-      userAgent,
-      ipAddress,
-      referrer,
-      metadata: {
-        district: deliveryAddress.district,
-        village: deliveryAddress.village || '',
-        hasEmail: !!email
-      }
-    });
+    // ...existing user & address handling code...
 
     const district = deliveryAddress.district;
     const allowCOD = ['Kampala', 'Wakiso'].includes(district);
@@ -146,12 +112,29 @@ router.post('/', async (req, res) => {
       activityType: 'proceeded_to_payment',
       pageUrl: '/checkout/payment',
       userAgent,
-      ipAddress,
+      ipAddress:req.ip,
       metadata: {
         district,
         allowCOD,
         cartSize: req.session.cart ? req.session.cart.length : 0
       }
+    });
+
+    // --- Facebook CAPI event for AddShippingInfo ---
+    await sendFacebookEvent({
+      eventName: 'AddShippingInfo',
+      firstName: name,
+      email,
+      phone,
+      ip: req.ip,
+      userAgent,
+      productId: 'checkout_shipping',
+      productName: 'Checkout Shipping Information',
+      price: req.session.cart?.reduce((sum, item) => sum + item.price * item.qty, 0) || 0,
+      pixelId: process.env.FB_PIXEL_ID,
+      accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+      externalId: userId,
+      sourceUrl: req.originalUrl,
     });
 
     res.render('checkout/payment', {
@@ -172,7 +155,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-
 router.post('/confirm', isGuest, async (req, res) => {
   try {
     const cart = req.session.cart || [];
@@ -189,7 +171,6 @@ router.post('/confirm', isGuest, async (req, res) => {
       return res.status(404).send('Delivery address not found.');
     }
 
-    // Log confirm step reached
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userAgent = req.get('User-Agent') || '';
     const ipAddress = req.ip;
@@ -211,6 +192,25 @@ router.post('/confirm', isGuest, async (req, res) => {
       }
     });
 
+    // --- Facebook CAPI: Track order confirmation step ---
+    await sendFacebookEvent({
+  eventName: 'InitiateCheckout',
+  email: user.email,
+  phone: user.phoneNumber,
+  ip: ipAddress,
+  userAgent,
+  cart,
+  productName: 'Cart Checkout',
+  price: cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + Number(deliveryFee),
+  pixelId: process.env.FB_PIXEL_ID,
+  accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+  sourceUrl: req.originalUrl,
+  referrer: req.get('Referrer') || '', // optional: where the user came from
+  sessionId: req.sessionID || req.cookies['sessionId'] || 'unknown_session',
+  userId: user._id || 'guest_user',
+  firstName: user.name,
+});
+
     res.render('checkout/confirm', {
       title: 'Confirm Your Order',
       cart,
@@ -231,6 +231,7 @@ const { getMomoToken } = require('../../utils/momoTokenManager');
 
 const { v4: uuidv4 } = require('uuid');
 
+
 router.post('/process', isGuest, async (req, res) => {
   const { paymentMethod, momoNumber, totalAmount, deliveryAddress } = req.body;
   const cart = req.session.cart || [];
@@ -249,11 +250,15 @@ router.post('/process', isGuest, async (req, res) => {
   }
 
   try {
-    const address = {
-      district: deliveryAddress?.district,
-      village: deliveryAddress?.village,
-      street: deliveryAddress?.street,
-    };
+    // Use provided delivery address or fallback to saved one
+    let address = deliveryAddress;
+    if (!address || !address.district) {
+      const savedAddress = await DeliveryAddress.findOne({ user: user._id }).lean();
+      if (!savedAddress) {
+        return res.status(400).send('Delivery address is required.');
+      }
+      address = savedAddress;
+    }
 
     const order = new Order({
       userId: user._id,
@@ -262,7 +267,11 @@ router.post('/process', isGuest, async (req, res) => {
       paymentMethod,
       momoNumber: paymentMethod === 'prepaid' ? momoNumber : undefined,
       paymentStatus: paymentMethod === 'prepaid' ? 'Pending' : 'Unpaid',
-      deliveryAddress: address,
+      deliveryAddress: {
+        district: address.district,
+        village: address.village,
+        street: address.street
+      },
       createdAt: new Date(),
       transactions: []
     });
@@ -278,7 +287,41 @@ router.post('/process', isGuest, async (req, res) => {
 
     await order.save();
 
-// Log order placed
+    // Send confirmation email
+    const itemsList = cart.map(item => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">UGX ${item.price.toLocaleString()}</td>
+      </tr>
+    `).join('');
+
+    const emailHTML = `
+      <h3>Order Confirmation</h3>
+      <p>Thank you for your order! Here are the details:</p>
+      <table style="border-collapse: collapse; width: 100%;">
+        <thead>
+          <tr>
+            <th style="padding: 8px; border: 1px solid #ddd;">Item</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+            <th style="padding: 8px; border: 1px solid #ddd;">Price</th>
+          </tr>
+        </thead>
+        <tbody>${itemsList}</tbody>
+      </table>
+      <p><strong>Total: UGX ${Number(totalAmount).toLocaleString()}</strong></p>
+      <p>Delivery Address: ${address.street}, ${address.village}, ${address.district}</p>
+      <p>We will contact you shortly to confirm delivery.</p>
+      <p><em>All Well Enterprises</em></p>
+    `;
+
+    await sendEmail({
+      to: [process.env.EMAIL_USER, user.email],
+      subject: 'Order Confirmation - All Well Enterprises',
+      html: emailHTML
+    });
+
+    // Log user activity
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userAgent = req.get('User-Agent') || '';
     const ipAddress = req.ip;
@@ -293,18 +336,20 @@ router.post('/process', isGuest, async (req, res) => {
       ipAddress,
       referrer,
       metadata: {
-      orderId: order._id,
-      total: order.total,
-      itemsCount: cart.length,
-      paymentMethod,
-      paymentStatus: order.paymentStatus,
-      momoNumber: paymentMethod === 'prepaid' ? momoNumber : undefined,
-      district: address.district
-  }
-});
+        orderId: order._id,
+        total: order.total,
+        itemsCount: cart.length,
+        paymentMethod,
+        paymentStatus: order.paymentStatus,
+        momoNumber: paymentMethod === 'prepaid' ? momoNumber : undefined,
+        district: address.district
+      }
+    });
 
+    // Clear cart
     req.session.cart = [];
 
+    // Initiate mobile money payment
     if (paymentMethod === 'prepaid') {
       const externalId = order.transactions[order.transactions.length - 1].externalId;
       const accessToken = await getMomoToken();
@@ -339,7 +384,22 @@ router.post('/process', isGuest, async (req, res) => {
         orderId: order._id 
       });
     }
-
+// Track purchase or payment intent with Facebook CAPI
+await sendFacebookEvent({
+  eventName: paymentMethod === 'prepaid' ? 'InitiateCheckout' : 'Purchase',
+  email: user.email,
+  phone: user.phoneNumber,
+  firstName: user.name,
+  externalId: user._id.toString(),
+  ip: ipAddress,
+  userAgent,
+  productId: cart.map(item => item._id).join(','),
+  productName: 'Cart Checkout',
+  price: Number(totalAmount),
+  pixelId: process.env.FB_PIXEL_ID,
+  accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+  sourceUrl: req.protocol + '://' + req.get('host') + req.originalUrl
+});
     res.render('checkout/success', {
       title: 'Order Placed Successfully!'
     });
@@ -348,6 +408,7 @@ router.post('/process', isGuest, async (req, res) => {
     res.status(500).send('Something went wrong. Please try again.');
   }
 });
+
 
 router.post('/retry-payment', isGuest, async (req, res) => {
   const { orderId } = req.body;

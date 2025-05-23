@@ -1,3 +1,12 @@
+<%
+  function slugify(text) {
+    return text.toString().toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+%>
+
 <div class="product-grid">
   <% products.forEach(product => { 
        const hasVariants = product.variants && product.variants.length > 0;
@@ -11,50 +20,54 @@
          minVariantPrice = Math.min(...finalPrices);
          maxVariantPrice = Math.max(...finalPrices);
        }
+
+       const slug = slugify(product.name);
+       const viewUrl = `/products/${product._id}-${slug}`;
   %>
-    <div class="product-card" data-id="<%= product.name %>">
-  <% if (product.images && product.images.length > 0) { %>
-    <img src="<%= product.images[0].url %>" alt="<%= product.name %>">
-  <% } else { %>
-    <img src="/images/placeholder.png" alt="No Image Available">
-  <% } %>
-
-  <h3><%= product.name %></h3>
-  <p class="price">
-    <% if (hasVariants) { %>
-      <% if (minVariantPrice !== maxVariantPrice) { %>
-        <span class="discounted">UGX <%= minVariantPrice.toLocaleString() %> - UGX <%= maxVariantPrice.toLocaleString() %></span>
+    <div class="product-card" data-id="<%= product._id %>" data-slug="<%= slug %>">
+      <% if (product.images && product.images.length > 0) { %>
+        <img src="<%= product.images[0].url %>" alt="<%= product.name %>" loading="lazy">
       <% } else { %>
-        <span class="discounted">UGX <%= minVariantPrice.toLocaleString() %></span>
+        <img src="/images/placeholder.png" alt="No Image Available">
       <% } %>
-    <% } else { %>
-      <% if (product.price !== product.salePrice) { %>
-        <span class="original">UGX <%= product.price.toLocaleString() %></span>
-        <span class="discounted">UGX <%= product.salePrice.toLocaleString() %></span>
-        <span class="percent">(-<%= Math.round((product.price - product.salePrice) / product.price * 100) %>%)</span>
-      <% } else { %>
-        <span class="discounted">UGX <%= product.price.toLocaleString() %></span>
-      <% } %>
-    <% } %>
-  </p>
 
-  <% if (user && user.role === 'admin') { %>
-    <a class="edit-link" href="<%= editUrl %>">Edit</a>
-    <button type="button" class="delete-link" onclick="deleteProduct('<%= product._id %>')">Delete</button>
-  <% } %>
-</div>
+      <h3><%= product.name %></h3>
+      <p class="price">
+        <% if (hasVariants) { %>
+          <% if (minVariantPrice !== maxVariantPrice) { %>
+            <span class="discounted">UGX <%= minVariantPrice.toLocaleString() %> - UGX <%= maxVariantPrice.toLocaleString() %></span>
+          <% } else { %>
+            <span class="discounted">UGX <%= minVariantPrice.toLocaleString() %></span>
+          <% } %>
+        <% } else { %>
+          <% if (product.price !== product.salePrice) { %>
+            <span class="original">UGX <%= product.price.toLocaleString() %></span>
+            <span class="discounted">UGX <%= product.salePrice.toLocaleString() %></span>
+            <span class="percent">(-<%= Math.round((product.price - product.salePrice) / product.price * 100) %>%)</span>
+          <% } else { %>
+            <span class="discounted">UGX <%= product.price.toLocaleString() %></span>
+          <% } %>
+        <% } %>
+      </p>
+
+      <% if (user && user.role === 'admin') { %>
+        <a class="edit-link" href="<%= editUrl %>">Edit</a>
+        <button type="button" class="delete-link" onclick="deleteProduct('<%= product._id %>')">Delete</button>
+      <% } %>
+    </div>
   <% }) %>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // Handle product card click (but ignore clicks on buttons/links inside)
+    // Handle product card click (excluding buttons and links)
     document.querySelectorAll(".product-card").forEach(card => {
       card.addEventListener("click", (event) => {
         if (event.target.closest("button, a")) return;
-        const productName = card.getAttribute("data-id");
-        if (productName) {
-          window.location.href = `/products/${productName}`;
+        const id = card.getAttribute("data-id");
+        const slug = card.getAttribute("data-slug");
+        if (id && slug) {
+          window.location.href = `/products/${id}-${slug}`;
         }
       });
     });
@@ -70,7 +83,7 @@
 
       if (res.ok) {
         alert(result.message || 'Product deleted successfully');
-        location.reload(); // Or: history.back();
+        location.reload();
       } else {
         alert(result.error || 'Failed to delete product');
       }

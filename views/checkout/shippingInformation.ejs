@@ -2,7 +2,7 @@
   <!-- Name -->
   <div class="form-group">
     <input type="hidden" name="userId" value="<%= user && user._id ? user._id : '' %>">
-    <label for="name">Full Name</label>
+    <label for="name">Full Name *</label>
     <input 
       type="text" 
       name="name" 
@@ -14,7 +14,7 @@
 
   <!-- Email -->
   <div class="form-group">
-    <label for="email">Email Address</label>
+    <label for="email">Email Address (Optional)</label>
     <input 
       type="email" 
       name="email" 
@@ -26,7 +26,7 @@
 
   <!-- Phone -->
   <div class="form-group">
-    <label for="phone">Phone Number</label>
+    <label for="phone">Phone Number *</label>
     <input 
       type="tel" 
       name="phone" 

@@ -19,6 +19,12 @@ const app = express();
 
 
 // Middleware
+const minify = require('express-minify');
+app.use(minify());
+
+const compression = require('compression');
+app.use(compression());
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(morgan('dev'));
@@ -31,13 +37,28 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day
 }));
 app.use((req, res, next) => {
-  res.locals.user = req.session.user;
+  res.locals.user = req.session.user || null;
   req.user = req.session.user
   next();
 });
 
 app.use((req, res, next) => {
+  res.locals.title = null;
+  res.locals.metaDescription = null;
+  res.locals.metaKeywords = null;
+
+  res.locals.ogTitle = null;
+  res.locals.ogDescription = null;
+  res.locals.ogImage = null;
+  res.locals.ogUrl = null;
+
+  res.locals.canonicalUrl = null;
+  res.locals.structuredData = null;
+  res.locals.metaCategories = [];
   res.locals.originalUrl = req.originalUrl;
+
+  res.locals.req = req; // so you can use req.originalUrl in views
+
   next();
 });
 
@@ -117,12 +138,20 @@ app.use('/whatsapp-order', whatsAppRoutes);
 const userActivityRoutes = require('./routes/userActivity/userActivity');
 app.use('/user-activity', userActivityRoutes);
 
+const sitemapRoute = require('./routes/sitemap/sitemap');
+app.use('/sitemap.xml', sitemapRoute);
+
 //Home Route:
 const homeRoute = require('./routes/home/constant');
 app.use('/', homeRoute);
 
+app.get('/about', (req, res) => {
+    res.render('about');
+});
 
-
+//User dashboard
+const userDashboardRoutes = require('./routes/userDashboard/userDashboard');
+app.use('/dashboard/user', userDashboardRoutes);
 
 // 404 handler
 app.use((req, res) => {

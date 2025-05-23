@@ -4,7 +4,7 @@
     <div class="hero__products">
       <% viewedProducts.forEach(product => { %>
         <div class="hero__product-card" data-id="<%= product.name %>">
-          <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hero__product-image" />
+          <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hero__product-image" loading="lazy"/>
           <div class="hero__product-info">
             <h3 class="hero__product-name"><%= product.name %></h3>
             <p class="hero__product-price">

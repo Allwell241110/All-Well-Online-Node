@@ -87,9 +87,15 @@
         });
 
         if (res.ok) {
-          showAlert('Product added to cart successfully!', 'success');
-          window.location.reload();
-        } else {
+  fbq('track', 'AddToCart', {
+    content_ids: [productId],
+    content_type: 'product',
+    value: parseFloat(price),
+    currency: 'UGX'
+  });
+  showAlert('Product added to cart successfully!', 'success');
+  window.location.reload();
+} else {
           showAlert('Failed to add product to cart', 'failure');
         }
       } catch (err) {

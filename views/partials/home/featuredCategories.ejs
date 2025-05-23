@@ -5,7 +5,7 @@
       <% featuredCategories.forEach(category => { %>
         <div class="featured-categories__card" data-id="<%= category.name %>">
           <div class="featured-categories__image-wrapper">
-            <img src="<%= category.image?.url %>" alt="<%= category.name %>" class="featured-categories__image" />
+            <img src="<%= category.image?.url %>" alt="<%= category.name %>" class="featured-categories__image" loading="lazy" />
           </div>
           <h3 class="featured-categories__name"><%= category.name %></h3>
         </div>

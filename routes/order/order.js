@@ -5,6 +5,9 @@ const axios = require('axios');
 const { getMomoToken } = require('../../utils/momoTokenManager');
 const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
 
+const { sendFacebookEvent } = require('../../utils/facebookCapi'); // Adjust path as needed
+
+
 // GET /orders — show list of orders
 router.get('/', isGuest, async (req, res) => {
   try {
@@ -31,6 +34,12 @@ router.get('/:id', isGuest, async (req, res) => {
 
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userId = req.user ? req.user._id : null;
+    let user = null;
+    if (userId) {
+      user = await User.findById(userId).lean(); // optional `.lean()` for better performance
+    } else {
+      user = {};
+    }
 
     // Log viewed order details
     await logUserActivity({
@@ -92,21 +101,37 @@ router.get('/:id', isGuest, async (req, res) => {
 
         // Log successful payment
         if (momoStatus === 'SUCCESSFUL') {
-          await logUserActivity({
-            userId,
-            sessionId,
-            activityType: 'successful_payment',
-            pageUrl: req.originalUrl,
-            referrer: req.get('Referrer') || '',
-            userAgent: req.get('User-Agent') || '',
-            ipAddress: req.ip,
-            metadata: {
-              orderId: order._id,
-              amount: latestTx.amount,
-              transactionId: response.data.financialTransactionId
-            }
-          });
-        }
+  await logUserActivity({
+    userId,
+    sessionId,
+    activityType: 'successful_payment',
+    pageUrl: req.originalUrl,
+    referrer: req.get('Referrer') || '',
+    userAgent: req.get('User-Agent') || '',
+    ipAddress: req.ip,
+    metadata: {
+      orderId: order._id,
+      amount: latestTx.amount,
+      transactionId: response.data.financialTransactionId
+    }
+  });
+
+  await sendFacebookEvent({
+    eventName: 'Purchase',
+    firstName: user.name,
+    email: user.email,
+    phone: user.phoneNumber,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    productId: (order.items || []).map(item => item.productId).join(','),
+    productName: 'Order Checkout',
+    price: Number(latestTx.amount),
+    pixelId: process.env.FB_PIXEL_ID,
+    accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+    externalId: user._id,
+    sourceUrl: req.originalUrl,
+  });
+}
       }
     }
 
@@ -140,12 +165,22 @@ router.post('/:id/status', isAdmin, async (req, res) => {
 });
 
 router.post('/:id/delete', isAdmin, async (req, res) => {
+  const orderId = req.params.id;
+  console.log(`Attempting to delete order with ID: ${orderId}`);
+
   try {
-    await Order.findByIdAndDelete(req.params.id);
+    const deletedOrder = await Order.findByIdAndDelete(orderId);
+
+    if (deletedOrder) {
+      console.log(`Successfully deleted order: ${deletedOrder._id}`);
+    } else {
+      console.warn(`No order found with ID: ${orderId}`);
+    }
+
     res.redirect('/orders');
     
   } catch (err) {
-    console.error(err);
+    console.error(`Error deleting order with ID ${orderId}:`, err);
     res.status(500).send('Failed to delete order');
   }
 });

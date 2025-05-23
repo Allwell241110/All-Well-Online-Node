@@ -231,11 +231,34 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    if (!user.password) {
+      // User has no password set – ask to update it
+      return res.render('auth/setPassword', {
+        title: 'Set Password',
+        userId: user._id,
+        message: 'Your account doesn’t have a password. Please set one to continue.',
+        error: '',
+      });
+    }
+
     if (!user.isVerified && user.role !== 'admin') {
-      return res.status(403).render('auth/login', {
-        title: 'Login',
-        message: '',
-        error: 'Account not verified',
+      const verificationCode = crypto.randomBytes(3).toString('hex');
+      user.verificationCode = verificationCode;
+      user.verificationCodeExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+      await user.save();
+
+      await sendEmail({
+        to: user.email,
+        subject: 'Verify Your Account',
+        text: `Your verification code is: ${verificationCode}`,
+        html: `<p>Your verification code is: <strong>${verificationCode}</strong></p>`
+      });
+
+      return res.render('auth/emailVerification', {
+        title: 'Email Verification',
+        message: 'Your account is not verified. A new code has been sent to your email.',
+        error: '',
+        user
       });
     }
 
@@ -248,7 +271,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Set session
     req.session.user = {
       _id: user._id,
       name: user.name,
@@ -257,7 +279,6 @@ router.post('/login', async (req, res) => {
       phoneNumber: user.phoneNumber
     };
 
-    // Log user login activity
     await logUserActivity({
       userId: user._id,
       sessionId: req.sessionID,
@@ -266,13 +287,12 @@ router.post('/login', async (req, res) => {
       referrer: req.get('Referrer') || '',
       userAgent: req.get('User-Agent') || '',
       ipAddress: req.ip,
-      metadata: {
-        redirectTo
-      }
+      metadata: { redirectTo }
     });
+
     delete req.session.returnTo;
     return res.redirect(redirectTo);
-    
+
   } catch (err) {
     console.error(err);
     return res.status(500).render('auth/login', {
@@ -483,6 +503,58 @@ router.post('/logout', async (req, res) => {
     res.clearCookie('connect.sid');
     res.redirect(redirectTo);
   });
+});
+
+router.post('/set-password', async (req, res) => {
+  const { userId, password, confirmPassword } = req.body;
+
+  if (!password || password.length < 6) {
+    return res.status(400).render('auth/setPassword', {
+      title: 'Set Password',
+      userId,
+      error: 'Password must be at least 6 characters.',
+      message: ''
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).render('auth/setPassword', {
+      title: 'Set Password',
+      userId,
+      error: 'Passwords do not match.',
+      message: ''
+    });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).render('auth/login', {
+        title: 'Login',
+        message: '',
+        error: 'User not found',
+      });
+    }
+
+    user.password = password; // Will be hashed by pre-save hook
+    user.role = 'user';
+    await user.save();
+
+    res.render('auth/login', {
+      title: 'Login',
+      message: 'Password set successfully. Please log in.',
+      error: ''
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).render('auth/setPassword', {
+      title: 'Set Password',
+      userId,
+      error: 'Something went wrong. Try again.',
+      message: ''
+    });
+  }
 });
 
 

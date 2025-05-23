@@ -18,7 +18,7 @@
           <tr>
             <td>
               <% if (variant.image && variant.image.url) { %>
-                <img src="<%= variant.image.url %>" alt="<%= variant.name %>" class="variant-image">
+                <img src="<%= variant.image.url %>" alt="<%= variant.name %>" class="variant-image" loading="lazy">
               <% } %>
             </td>
             <td><%= variant.name %></td>

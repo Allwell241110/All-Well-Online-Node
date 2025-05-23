@@ -72,6 +72,24 @@ router.post('/', async (req, res) => {
         productName: product.name
       }
     });
+    
+    const { sendFacebookEvent } = require('../../utils/facebookCapi');
+
+const pixelId = process.env.FB_PIXEL_ID;
+const accessToken = process.env.CAPI_ACCESS_TOKEN;
+
+// After saving the order and logging activity, before redirect:
+await sendFacebookEvent({
+  eventName: 'Lead',
+  phone,
+  ip: ipAddress,
+  userAgent,
+  productId: product._id.toString(),
+  productName: product.name,
+  price: parseFloat(product.salePrice || product.price),
+  pixelId,
+  accessToken
+});
 
     const businessNumber = process.env.BUSINESS_NUMBER;
     const message = `Hello, I'd like to order:

@@ -145,9 +145,14 @@ router.get('/main-categories/:metaCategoryId', async (req, res) => {
   const referrer = req.get('Referrer') || '';
   const userAgent = req.get('User-Agent') || '';
   const ipAddress = req.ip;
-
+  console.log('Requested metaCategoryId:', metaCategoryId);
   try {
     const categories = await MainCategory.find({ meta: metaCategoryId });
+
+    const metaCategory = await MetaCategory.findById(metaCategoryId);
+    if (!metaCategory) {
+      return res.status(404).send('MetaCategory not found');
+    }
 
     // Log the activity
     await logUserActivity({
@@ -164,11 +169,31 @@ router.get('/main-categories/:metaCategoryId', async (req, res) => {
       }
     });
 
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": `Main Categories under ${metaCategory.name}`,
+      "mainEntity": categories.map((main) => ({
+        "@type": "Thing",
+        "name": main.name,
+        "url": `${process.env.FRONT_END_HOST}/categories/main-categories/${main._id}`
+      }))
+    };
+
     res.render('categories/user/mainCategories', {
+      structuredData,
+      title: `${metaCategory.name} Main Categories - All Well Online Store`,
+      metaDescription: `${metaCategory.name} Categories - All Well Online`,
+      metaKeywords: `${metaCategory.name}`,
+      ogTitle: `${metaCategory.name} Products - All Well Online Uganda`,
+      ogDescription: `Shop ${metaCategory.name} products at All Well Online Store. Fast delivery. Great deals. Best quality in Uganda.`,
+      ogUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+      ogImage: '',
+      canonicalUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
       categories,
       main: true,
-      title: 'Main Categories'
     });
+
   } catch (err) {
     console.error('Error fetching main categories:', err);
     res.status(500).json({ error: 'Server error' });
@@ -201,6 +226,8 @@ router.get('/sub-categories/:mainCategoryId', async (req, res) => {
     // Step 1: Get all subcategories for this main category
     const subcategories = await SubCategory.find({ main: mainCategoryId });
     const subCategoryIds = subcategories.map(sub => sub._id);
+    
+    const mainCategory = MainCategory.findById(mainCategoryId);
 
     // Step 2: Build product filter
     const productFilter = { category: { $in: subCategoryIds } };
@@ -234,9 +261,28 @@ router.get('/sub-categories/:mainCategoryId', async (req, res) => {
         sort
       }
     });
-
+    
+    const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": `Products under ${mainCategory.name}`,
+  "hasPart": subcategories.map(sub => ({
+    "@type": "CollectionPage",
+    "name": sub.name,
+    "url": `${process.env.FRONT_END_HOST}/categories/sub-categories/${sub.name}`
+  }))
+};
+    
     res.render('categories/user/subCategory', {
-      title: 'Category Products',
+      structuredData,
+      title: `${mainCategory.name} Products - All Well Online Store`,
+      metaDescription: `${mainCategory.name} Products - All Well Online`,
+      metaKeywords: `${mainCategory.name}`,
+      ogTitle: `${mainCategory.name} - All Well Online Uganda`,
+      ogDescription: `Shop ${mainCategory.name} products  at All Well Online Store. Fast delivery. Great deals. Best quality in Uganda.`,
+      ogUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+      ogImage: '',
+      canonicalUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
       main: false,
       subcategories,
       mainCategoryProducts: products,
@@ -313,8 +359,39 @@ router.get('/products/:subcategoryName', async (req, res) => {
       }
     });
 
+    const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": `Products in ${subcategory.name}`,
+  "itemListElement": products.map((product, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "item": {
+      "@type": "Product",
+      "name": product.name,
+      "image": product.images[0].url,
+      "description": product.description,
+      "sku": product.sku || product._id,
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": "UGX",
+        "price": product.salePrice || product.price,
+        "availability": "https://schema.org/InStock"
+      }
+    }
+  }))
+};
+
     res.render('products/products', {
-      title: `${subcategory.name} Products`,
+      structuredData,
+      title: `${subcategory.name} Products - All Well Online Store`,
+      metaDescription: `${subcategory.name} Products - All Well Online`,
+      metaKeywords: `${subcategory.name}`,
+      ogTitle: `${subcategory.name} - All Well Online Uganda`,
+      ogDescription: `Shop ${subcategory.name} products  at All Well Online Store. Fast delivery. Great deals. Best quality in Uganda.`,
+      ogUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+      ogImage: subcategory.image.url,
+      canonicalUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
       products,
       searchQuery,
       sort,

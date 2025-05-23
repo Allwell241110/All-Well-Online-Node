@@ -50,6 +50,8 @@ function isBase64(str) {
     return false;
   }
 }
+const Order = require('../../models/Order'); // adjust path as needed
+const UserActivity = require('../../models/UserActivity');
 
 router.post('/', isAdmin, upload.any(), async (req, res) => {
   try {
@@ -210,16 +212,46 @@ router.get('/', async (req, res) => {
     ]);
 
     const totalPages = Math.ceil(totalProducts / limit);
-
+   const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "All Products - All Well Online",
+    "itemListOrder": "https://schema.org/ItemListOrderDescending",
+    "numberOfItems": products.length,
+    "itemListElement": products.map((product, index) => ({
+      "@type": "Product",
+      "position": index + 1,
+      "name": product.name,
+      "image": product.images[0].url || `${process.env.FRONT_END_HOST}/images/all_well_online.png`,
+      "description": product.description || '',
+      "sku": product._id,
+      "offers": {
+        "@type": "Offer",
+        "url": `${process.env.FRONT_END_HOST}/products/${product.name}`,
+        "priceCurrency": "UGX",
+        "price": product.salePrice || product.price,
+        "availability": "https://schema.org/InStock"
+    }
+  }))
+};
     res.render('products/products', {
-      title: 'All Well Online',
-      products,
-      searchQuery,
-      sort,
-      currentPage: page,
-      totalPages,
-      limit
-    });
+    title: 'All Products - All Well Online',
+    metaDescription: 'Browse all products available at All Well Online. Find deals, sort by price, and explore our wide range of items.',
+    metaKeywords: 'all products, online shopping, All Well, deals, price, shop now',
+    ogTitle: 'All Products - All Well Online',
+    ogDescription: 'Explore a wide range of quality products at All Well Online. Shop now and enjoy great deals!',
+    ogImage: `${process.env.FRONT_END_HOST}/images/all_well_online.png`,
+    ogUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+    canonicalUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+    ogType: 'website',
+    structuredData,
+    products,
+    searchQuery,
+    sort,
+    currentPage: page,
+    totalPages,
+    limit
+});
   } catch (err) {
     console.error('Error fetching products:', err.message);
     res.status(500).send('Server error while fetching products');
@@ -228,45 +260,44 @@ router.get('/', async (req, res) => {
 
 const logUserActivity = require('../../utils/logUserActivity');
 
-router.get('/:name', async (req, res) => {
+router.get('/:idSlug', async (req, res) => {
   try {
-    const productName = req.params.name;
+    const idSlug = req.params.idSlug;
+    const [productId] = idSlug.split('-');
 
-    // Find product by name (case-insensitive)
-    const product = await Product.findOne({ name: new RegExp(`^${productName}$`, 'i') });
-    if (!product) {
-      return res.status(404).render('404', { message: 'Product not found' });
+    const userId = req.session?.user?._id;
+
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).render('404', { message: 'Product not found' });
+
+    // Validate slug (optional redirect for canonical URL)
+    const expectedSlug = product.name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+    if (idSlug !== `${productId}-${expectedSlug}`) {
+      return res.redirect(301, `/products/${productId}-${expectedSlug}`);
     }
 
-    // Decode description if it's Base64
-    function isBase64(str) {
+    // Decode base64 description if needed
+    const isBase64 = (str) => {
       try {
         return Buffer.from(str, 'base64').toString('base64') === str;
-      } catch (err) {
+      } catch {
         return false;
       }
-    }
+    };
 
     if (isBase64(product.description)) {
       product.description = Buffer.from(product.description, 'base64').toString('utf-8');
     }
 
-    // Prepare activity logging
-    const userId = req.session?.user?._id || null;
-    const sessionId = req.sessionID;
-    const pageUrl = req.originalUrl;
-    const referrer = req.get('Referrer') || '';
-    const userAgent = req.get('User-Agent') || '';
-    const ipAddress = req.ip;
-
+    // Log user activity
     await logUserActivity({
       userId,
-      sessionId,
+      sessionId: req.sessionID,
       activityType: 'viewed_product',
-      pageUrl,
-      referrer,
-      userAgent,
-      ipAddress,
+      pageUrl: req.originalUrl,
+      referrer: req.get('Referrer') || '',
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip,
       metadata: {
         productId: product._id,
         productName: product.name,
@@ -274,13 +305,52 @@ router.get('/:name', async (req, res) => {
       }
     });
 
+    // Check if user has purchased
+    let hasPurchased = false;
+    if (userId) {
+      const orders = await Order.find({ userId });
+      hasPurchased = orders.some(order =>
+        order.items.some(item =>
+          item.productId.toString() === product._id.toString()
+        )
+      );
+    }
+
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "image": Array.isArray(product.images) ? product.images.map(img => img.url) : [],
+      "description": product.description,
+      "sku": product._id.toString(),
+      "brand": { "@type": "Brand", "name": product.brand },
+      "offers": {
+        "@type": "Offer",
+        "url": `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+        "priceCurrency": "UGX",
+        "price": product.salePrice || product.price,
+        "availability": "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition"
+      }
+    };
+
     res.render('products/product', {
       title: `${product.name} - All Well Online`,
+      metaDescription: product.description?.slice(0, 160) || `Buy ${product.name} online at All Well.`,
+      metaKeywords: `${product.name}, online shopping, All Well`,
+      ogTitle: `${product.name} - All Well Online`,
+      ogDescription: product.description?.slice(0, 160) || `Buy ${product.name} online at All Well.`,
+      ogImage: product.images?.[0]?.url || `${process.env.FRONT_END_HOST}/images/all_well_online.png`,
+      ogUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+      canonicalUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+      ogType: 'product',
       product,
+      canReview: hasPurchased,
+      structuredData
     });
 
   } catch (err) {
-    console.error('Error fetching product by name:', err.message);
+    console.error('Error fetching product by ID and slug:', err.message);
     res.status(500).send('Server error while fetching product details');
   }
 });
@@ -532,6 +602,56 @@ router.get('/product/view-image', (req, res) => {
   title: 'Full Image',
   imageUrl: decodeURIComponent(req.query.url)
 });
+});
+
+router.post('/reviews/:productId', isGuest, async (req, res) => {
+  const userId = req.session?.user?._id;
+  const { rating, comment } = req.body;
+  const productId = req.params.productId;
+
+  console.log(`Received review submission for product: ${productId}`);
+  console.log(`User ID: ${userId}, Rating: ${rating}, Comment: ${comment}`);
+
+  if (!userId) {
+    console.warn('User not logged in. Redirecting to login.');
+    return res.redirect('/auth/login');
+  }
+
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      console.warn(`Product not found: ${productId}`);
+      return res.status(404).send('Product not found');
+    }
+
+    product.reviews = product.reviews || [];
+
+    const newReview = {
+      userId,
+      userName: req.session.user.name || 'Anonymous',
+      rating: Number(rating),
+      comment,
+    };
+
+    console.log('Appending new review:', newReview);
+    product.reviews.push(newReview);
+
+    const ratings = product.reviews.map(r => Number(r.rating));
+    const totalRating = ratings.reduce((a, b) => a + b, 0);
+    product.averageRating = totalRating / ratings.length;
+    product.numReviews = ratings.length;
+
+    console.log(`Updated average rating: ${product.averageRating}`);
+    console.log(`Total reviews: ${product.numReviews}`);
+
+    await product.save();
+    console.log(`Review saved successfully for product: ${product.name}`);
+
+    res.redirect(`/products/${product.name}`);
+  } catch (error) {
+    console.error('Error while submitting review:', error.message);
+    res.status(500).send('Internal server error');
+  }
 });
 
 module.exports = router;

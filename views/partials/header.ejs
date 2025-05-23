@@ -1,7 +1,7 @@
 <div class="all-header">
   <!-- Logo Section -->
   <div class="logo-container">
-    <img class="logo" src="/images/all_well_online.png" alt="All Well Online Logo">
+    <img class="logo" src="/images/all_well_online.png" alt="All Well Online Logo" loading="lazy">
     <h1 class="shop-name">All Well Online</h1>
   </div>
 
@@ -11,22 +11,39 @@
       <div></div><div></div><div></div>
     </div>
 
-    <!-- Sidebar Menu -->
-    <div id="sidebar" class="sidebar">
+<!-- Sidebar Menu -->
+<div id="sidebar" class="sidebar">
   <ul>
+    <h1>Links:</h1>
     <li><a href="/">Home</a></li>
-    <li><a href="/shop">Shop</a></li>
-    <li><a href="/about">About</a></li>
-    <li><a href="/contact">Contact</a></li>
+    <li><a href="/products">Products</a></li>
     <li><a href="/cart">Cart (<%= cartItemCount %>)</a></li>
-    <h1 class="categories">Categories</h1>
-    <% if (metaCategories && metaCategories.length > 0) { %>
-      <% metaCategories.forEach(category => { %>
-        <li>
-          <a href="/categories/main-categories/<%= category._id %>"><%= category.name %></a>
-        </li>
-      <% }); %>
+    <% if (user) { %>
+    <li><a href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>">Profile</a></li>
+    <li><a href="/about">About</a></li>
+<% } else { %>
+  <li><a href="/auth/login">Login</a></li>
+<% } %>
+
+    <% if (user && user.role === 'admin') { %>
+      <h1>Admin:</h1>
+      <li><a href="/products/constant/product-nature">Add Product</a></li>
+      <li><a href="/upload-csv">Bulk Upload</a></li>
+      <li><a href="/categories/constant/all-categories">Manage Categories</a></li>
+      <li><a href="/orders">Orders</a></li>
     <% } %>
+
+    <h1>Categories:</h1>
+    <% metaCategories.forEach(category => { %>
+  <li>
+    <a 
+      href="/categories/main-categories/<%= category._id %>" 
+      class="meta-category-link" 
+      data-category-name="<%= category.name %>">
+      <%= category.name %>
+    </a>
+  </li>
+<% }); %>
   </ul>
 </div>
 
@@ -53,18 +70,21 @@
 
     <!-- User Login/Profile Section -->
     <div class="user-profile">
-      <% if (user) { %>
-        <a href="/profile" class="profile-link">
-          <span><%= user.name %></span>
-        </a>
-        <form action="/auth/logout" method="POST" class="logout-form">
-          <input type="hidden" name="redirectTo" value="<%= originalUrl %>">
-          <button class="logout-btn" type="submit">Logout</button>
-        </form>
-      <% } else { %>
-        <a class="login-btn" href="/auth/login" class="login-btn">Login</a>
-      <% } %>
-    </div>
+  <% if (user) { %>
+    <a 
+      href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>" 
+      class="profile-link"
+    >
+      <span><%= user.name %></span>
+    </a>
+    <form action="/auth/logout" method="POST" class="logout-form">
+      <input type="hidden" name="redirectTo" value="<%= originalUrl %>">
+      <button class="logout-btn" type="submit">Logout</button>
+    </form>
+  <% } else { %>
+    <a href="/auth/login" class="login-btn">Login</a>
+  <% } %>
+</div>
 
   </div>
 </div>

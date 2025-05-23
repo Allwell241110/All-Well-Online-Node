@@ -33,7 +33,6 @@ const productSchema = new mongoose.Schema({
     type: Number,
     validate: {
       validator: function (v) {
-        // Only validate if price exists and variants are not used
         return this.variants.length === 0 ? v <= this.price : true;
       },
       message: 'Sale price must be less than or equal to price.'
@@ -50,7 +49,17 @@ const productSchema = new mongoose.Schema({
   },
   averageRating: Number,
   numReviews: Number,
-  variants: [variantSchema]
+  variants: [variantSchema],
+
+  // ADD THIS:
+  reviews: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userName: String,
+    rating: Number,
+    comment: String,
+    createdAt: { type: Date, default: Date.now }
+  }]
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

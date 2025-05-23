@@ -7,10 +7,10 @@
   alt="<%= product.name %>" 
   class="main-image" 
   data-full-url="/products/product/view-image?url=<%= encodeURIComponent(product.images[0]?.url) %>" 
-  style="cursor: zoom-in;" />
+  style="cursor: zoom-in;" loading="lazy"/>
         <div class="thumbnail-row">
           <% product.images.forEach((img, i) => { %>
-            <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" />
+            <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" loading="lazy"/>
           <% }) %>
         </div>
       </div>
@@ -108,6 +108,8 @@
   }
 </script>
   </div>
+  
+  <%- include('../partials/products/reviews', { product, canReview }) %>
 </section>
   
 <script>
@@ -127,5 +129,14 @@ mainImage.dataset.fullUrl = `/products/product/view-image?url=${encodeURICompone
         window.location.href = fullUrl;
       }
     });
+  });
+</script>
+<script>
+  fbq('track', 'ViewContent', {
+    content_name: "<%= product.name %>",
+    content_ids: ["<%= product._id %>"],
+    content_type: "product",
+    value: <%= product.salePrice || product.price %>,
+    currency: "UGX"
   });
 </script>

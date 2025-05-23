@@ -4,7 +4,8 @@ function isUser(req, res, next) {
     return next();
   }
 
-  req.session.returnTo = req.originalUrl;
+  req.session.returnTo = req.get('Referer') || '/';
+  
   return res.redirect('/auth/login');
 }
 
@@ -13,7 +14,7 @@ function isAdmin(req, res, next) {
     return next();
   }
 
-  req.session.returnTo = req.originalUrl;
+  req.session.returnTo = req.get('Referer') || '/';
   return res.redirect('/auth/login');
 }
 
@@ -24,7 +25,7 @@ function isGuest(req, res, next) {
   }
 
   // Save original URL before redirecting
-  req.session.returnTo = req.originalUrl;
+  req.session.returnTo = req.get('Referer') || '/';
 
   return res.redirect('/auth/login');
 }

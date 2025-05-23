@@ -1,0 +1,101 @@
+<div class="user-dashboard">
+  <h2>Welcome, <%= user.name %></h2>
+
+  <section>
+    <h3>Profile</h3>
+    <p><strong>Email:</strong> <%= user.email %></p>
+    <p><strong>Phone:</strong> <%= user.phoneNumber %></p>
+  </section>
+
+  <section>
+    <h3>My Orders</h3>
+    <% if (orders.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Payment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% orders.forEach((order, index) => { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= order.createdAt.toDateString() %></td>
+              <td>
+                <ul>
+                  <% order.items.forEach(item => { %>
+                    <li><%= item.name %> (x<%= item.quantity %>)</li>
+                  <% }); %>
+                </ul>
+              </td>
+              <td>UGX <%= order.total.toLocaleString() %></td>
+              <td><%= order.status %></td>
+              <td><%= order.paymentStatus %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No orders placed yet.</p>
+    <% } %>
+  </section>
+
+  <section>
+    <h3>WhatsApp Orders</h3>
+    <% if (whatsappOrders.length > 0) { %>
+      <table border="1" cellpadding="5">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>District</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% whatsappOrders.forEach((order, index) => { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= order.product.name %></td>
+              <td><%= order.quantity %></td>
+              <td><%= order.district %></td>
+              <td><%= new Date(order.createdAt).toLocaleDateString() %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>No WhatsApp orders found.</p>
+    <% } %>
+  </section>
+
+  <section>
+    <h3>Recently Viewed Products</h3>
+    <% if (viewedProducts.length > 0) { %>
+      <div class="recently-viewed-carousel" style="display: flex; gap: 1rem; overflow-x: auto; flex-wrap: nowrap;">
+        <% viewedProducts.forEach(product => { %>
+          <div class="carousel-item" style="border: 1px solid #ccc; padding: 10px; width: 200px;">
+            <img src="<%= product.images?.[0]?.url || '/default.jpg' %>" alt="<%= product.name %>" style="width: 100%; height: auto;">
+            <div style="margin-top: 8px;">
+              <strong><%= product.name %></strong><br>
+              <% if (product.salePrice && product.salePrice < product.price) { %>
+                <span style="text-decoration: line-through; color: gray;">UGX <%= product.price.toLocaleString() %></span><br>
+                <span style="color: red;">UGX <%= product.salePrice.toLocaleString() %></span>
+              <% } else { %>
+                <span>UGX <%= product.price.toLocaleString() %></span>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <p>No recently viewed products.</p>
+    <% } %>
+  </section>
+</div>

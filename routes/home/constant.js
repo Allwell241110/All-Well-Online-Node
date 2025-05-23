@@ -72,13 +72,32 @@ router.get('/', async (req, res) => {
       .filter(p => p.discount > 0)
       .sort((a, b) => b.discount - a.discount)
       .slice(0, 6);
+    const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "All Well Online Store",
+  "url": "https://www.allwellonline.shop",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.allwellonline.shop/products/?search={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
 
     res.render('home', {
-      title: 'Home',
-      viewedProducts,
-      featuredCategories,
-      hotDeals: productsWithDiscount
-    });
+  title: 'Home - All Well Online Store',
+  metaDescription: 'Shop online in Uganda with All Well Store. From electronics to Home and Office products, explore quality products at the best prices.',
+  metaKeywords: 'Uganda online store, electronics, home and office products, shop online Uganda, Uganda online Shopping',
+  ogTitle: 'All Well Online Shopping – Quality Delivered',
+  ogDescription: 'Shop now at All Well Store. Fast delivery. Great deals. Best quality in Uganda.',
+  ogUrl: `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+  canonicalUrl: process.env.FRONT_END_HOST,
+  ogImage: '',
+  viewedProducts,
+  featuredCategories,
+  hotDeals: productsWithDiscount,
+  structuredData
+});
   } catch (err) {
     console.error(err);
     res.status(500).render('error', { message: 'Failed to load homepage data' });
