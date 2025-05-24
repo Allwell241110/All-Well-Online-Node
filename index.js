@@ -20,10 +20,10 @@ const app = express();
 
 // Middleware
 const minify = require('express-minify');
-/*app.use(minify());*/
+app.use(minify());
 
 const compression = require('compression');
-/*app.use(compression());*/
+app.use(compression());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
