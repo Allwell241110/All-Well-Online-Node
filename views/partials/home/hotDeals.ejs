@@ -1,11 +1,22 @@
+<%
+  function slugify(text) {
+    return text.toString().toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+%>
+
 <section class="hot-deals">
   <div class="hot-deals__container">
     <h2 class="hot-deals__title">Hot Deals</h2>
     <div class="hot-deals__grid">
       <% hotDeals.forEach(product => { 
         const discount = product.salePrice && product.price ? Math.round(100 * (product.price - product.salePrice) / product.price) : 0;
+        const slug = slugify(product.name);
+        const productUrl = `/products/${product._id}-${slug}`;
       %>
-        <div class="hot-deals__card" data-id="<%= product.name %>">
+        <a href="<%= productUrl %>" class="hot-deals__card" data-id="<%= product._id %>">
           <div class="hot-deals__image-wrapper">
             <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hot-deals__image" loading="lazy" />
             <% if (discount > 0) { %>
@@ -19,7 +30,7 @@
               <span class="hot-deals__original-price">UGX <%= product.price %></span>
             </p>
           </div>
-        </div>
+        </a>
       <% }); %>
     </div>
   </div>

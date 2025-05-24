@@ -1,9 +1,21 @@
+<%
+  function slugify(text) {
+    return text.toString().toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+%>
+
 <section class="hero">
   <div class="hero__container">
     <h2 class="hero__title">Top Picks for You</h2>
     <div class="hero__products">
-      <% viewedProducts.forEach(product => { %>
-        <div class="hero__product-card" data-id="<%= product.name %>">
+      <% viewedProducts.forEach(product => { 
+          const slug = slugify(product.name);
+          const productUrl = `/products/${product._id}-${slug}`;
+      %>
+        <a href="<%= productUrl %>" class="hero__product-card" data-id="<%= product._id %>">
           <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hero__product-image" loading="lazy"/>
           <div class="hero__product-info">
             <h3 class="hero__product-name"><%= product.name %></h3>
@@ -12,11 +24,11 @@
                 <span class="hero__sale-price">UGX <%= product.salePrice %></span>
                 <span class="hero__original-price">UGX <%= product.price %></span>
               <% } else { %>
-                $<%= product.price %>
+                UGX <%= product.price %>
               <% } %>
             </p>
           </div>
-        </div>
+        </a>
       <% }); %>
     </div>
   </div>

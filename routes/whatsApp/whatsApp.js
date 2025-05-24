@@ -10,8 +10,10 @@ const logUserActivity = require('../../utils/logUserActivity');
 
 router.post('/', async (req, res) => {
   const { name, phone, district, quantity, productId } = req.body;
+  console.log('Received POST / with body:', req.body);
 
   if (!name || !phone || !district || !productId) {
+    console.warn('Missing required fields:', { name, phone, district, productId });
     return res.status(400).send('Missing required fields');
   }
 
@@ -22,11 +24,22 @@ router.post('/', async (req, res) => {
   const userAgent = req.get('User-Agent') || '';
   const ipAddress = req.ip;
 
+  console.log('Session and request details:', {
+    userId,
+    sessionId,
+    pageUrl,
+    referrer,
+    userAgent,
+    ipAddress
+  });
+
   try {
     const product = await Product.findById(productId);
     if (!product) {
+      console.warn('Product not found:', productId);
       return res.status(404).send('Product not found');
     }
+    console.log('Product found:', product.name);
 
     // Determine display price
     let price = product.salePrice || product.price;
@@ -39,6 +52,7 @@ router.post('/', async (req, res) => {
     } else {
       price = `UGX ${price.toLocaleString()}`;
     }
+    console.log('Calculated display price:', price);
 
     // Save the order
     const order = new WhatsAppOrder({
@@ -53,6 +67,7 @@ router.post('/', async (req, res) => {
       createdAt: new Date(),
     });
     await order.save();
+    console.log('Order saved successfully:', order._id);
 
     // Log user activity
     await logUserActivity({
@@ -72,24 +87,25 @@ router.post('/', async (req, res) => {
         productName: product.name
       }
     });
-    
+    console.log('User activity logged');
+
     const { sendFacebookEvent } = require('../../utils/facebookCapi');
 
-const pixelId = process.env.FB_PIXEL_ID;
-const accessToken = process.env.CAPI_ACCESS_TOKEN;
+    const pixelId = process.env.FB_PIXEL_ID;
+    const accessToken = process.env.FB_CAPI_ACCESS_TOKEN;
 
-// After saving the order and logging activity, before redirect:
-await sendFacebookEvent({
-  eventName: 'Lead',
-  phone,
-  ip: ipAddress,
-  userAgent,
-  productId: product._id.toString(),
-  productName: product.name,
-  price: parseFloat(product.salePrice || product.price),
-  pixelId,
-  accessToken
-});
+    await sendFacebookEvent({
+      eventName: 'Lead',
+      phone,
+      ip: ipAddress,
+      userAgent,
+      productId: product._id.toString(),
+      productName: product.name,
+      price: parseFloat(product.salePrice || product.price),
+      pixelId,
+      accessToken
+    });
+    console.log('Facebook event sent');
 
     const businessNumber = process.env.BUSINESS_NUMBER;
     const message = `Hello, I'd like to order:
@@ -102,6 +118,7 @@ await sendFacebookEvent({
 *District:* ${district}`;
 
     const waURL = `https://wa.me/${businessNumber}?text=${encodeURIComponent(message)}`;
+    console.log('Redirecting to WhatsApp with URL:', waURL);
     res.redirect(waURL);
 
   } catch (err) {

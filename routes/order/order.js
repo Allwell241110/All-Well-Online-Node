@@ -4,6 +4,7 @@ const Order = require('../../models/Order');
 const axios = require('axios');
 const { getMomoToken } = require('../../utils/momoTokenManager');
 const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
+const User = require('../../models/User');
 
 const { sendFacebookEvent } = require('../../utils/facebookCapi'); // Adjust path as needed
 
@@ -29,19 +30,28 @@ const logUserActivity = require('../../utils/logUserActivity');
 
 router.get('/:id', isGuest, async (req, res) => {
   try {
+    console.log('Fetching order ID:', req.params.id);
     const order = await Order.findById(req.params.id).lean();
-    if (!order) return res.status(404).send('Order not found');
+    if (!order) {
+      console.warn('Order not found:', req.params.id);
+      return res.status(404).send('Order not found');
+    }
 
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userId = req.user ? req.user._id : null;
+    console.log('Session ID:', sessionId);
+    console.log('User ID:', userId);
+
     let user = null;
     if (userId) {
-      user = await User.findById(userId).lean(); // optional `.lean()` for better performance
+      user = await User.findById(userId).lean();
+      console.log('User found:', user?.name);
     } else {
       user = {};
+      console.log('User not logged in');
     }
 
-    // Log viewed order details
+    console.log('Logging user activity: viewed_order_details');
     await logUserActivity({
       userId,
       sessionId,
@@ -52,89 +62,7 @@ router.get('/:id', isGuest, async (req, res) => {
       ipAddress: req.ip,
       metadata: { orderId: order._id, paymentStatus: order.paymentStatus }
     });
-
-    // Only check MoMo status if prepaid and still not paid
-    if (order.paymentMethod === 'prepaid' && order.paymentStatus !== 'Paid') {
-      const latestTx = order.transactions?.[order.transactions.length - 1];
-      if (latestTx && latestTx.status === 'Pending') {
-        const accessToken = await getMomoToken();
-
-        const response = await axios.get(
-          `${process.env.MOMO_BASE_URL}/collection/v1_0/requesttopay/${latestTx.externalId}`,
-          {
-            headers: {
-              'X-Target-Environment': process.env.TARGET_ENVIRONMENT,
-              'Ocp-Apim-Subscription-Key': process.env.MOMO_SUBSCRIPTION_KEY,
-              Authorization: `Bearer ${accessToken}`
-            }
-          }
-        );
-
-        const momoStatus = response.data.status; // 'SUCCESSFUL', 'FAILED', or 'PENDING'
-        let paymentStatus = 'Unpaid';
-        if (momoStatus === 'SUCCESSFUL') paymentStatus = 'Paid';
-        else if (momoStatus === 'FAILED') paymentStatus = 'Failed';
-
-        // Update order in DB
-        await Order.updateOne(
-          { _id: order._id, 'transactions.externalId': latestTx.externalId },
-          {
-            $set: {
-              paymentStatus,
-              'transactions.$.status': momoStatus === 'SUCCESSFUL' ? 'Successful' :
-                                       momoStatus === 'FAILED' ? 'Failed' : 'Pending',
-              transactionId: momoStatus === 'SUCCESSFUL' ? response.data.financialTransactionId : undefined
-            }
-          }
-        );
-
-        // Reload order with updated values
-        Object.assign(order, {
-          paymentStatus,
-          transactionId: momoStatus === 'SUCCESSFUL' ? response.data.financialTransactionId : order.transactionId,
-          transactions: order.transactions.map(tx =>
-            tx.externalId === latestTx.externalId
-              ? { ...tx, status: momoStatus }
-              : tx
-          )
-        });
-
-        // Log successful payment
-        if (momoStatus === 'SUCCESSFUL') {
-  await logUserActivity({
-    userId,
-    sessionId,
-    activityType: 'successful_payment',
-    pageUrl: req.originalUrl,
-    referrer: req.get('Referrer') || '',
-    userAgent: req.get('User-Agent') || '',
-    ipAddress: req.ip,
-    metadata: {
-      orderId: order._id,
-      amount: latestTx.amount,
-      transactionId: response.data.financialTransactionId
-    }
-  });
-
-  await sendFacebookEvent({
-    eventName: 'Purchase',
-    firstName: user.name,
-    email: user.email,
-    phone: user.phoneNumber,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    productId: (order.items || []).map(item => item.productId).join(','),
-    productName: 'Order Checkout',
-    price: Number(latestTx.amount),
-    pixelId: process.env.FB_PIXEL_ID,
-    accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
-    externalId: user._id,
-    sourceUrl: req.originalUrl,
-  });
-}
-      }
-    }
-
+    console.log('Rendering order details page');
     res.render('orders/orderDetails', {
       title: 'Order Details',
       order,

@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 require('dotenv').config();
+const mongoose = require('mongoose');
 
 const User = require('../../models/User');
 const DeliveryAddress = require('../../models/DeliveryAddress');
@@ -36,6 +37,7 @@ router.get('/', async (req, res) => {
     const cartItemsCount = req.session.cart ? req.session.cart.length : 0;
     console.log('Cart Items Count:', cartItemsCount);
 
+if (userId && mongoose.Types.ObjectId.isValid(userId)) {
     await logUserActivity({
       userId,
       sessionId,
@@ -49,8 +51,12 @@ router.get('/', async (req, res) => {
       }
     });
     console.log('Logged user activity.');
+  } else {
+  console.warn('Skipping activity log: invalid or missing userId');
+}
+    
 
-    const totalPrice = req.session.cart?.reduce((sum, item) => sum + item.price * item.qty, 0) || 0;
+    const totalPrice = req.session.cart?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
     console.log('Total checkout price:', totalPrice);
 
     await sendFacebookEvent({
@@ -85,8 +91,6 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const { name, email, phone, deliveryAddress } = req.body;
-  let userId = req.session.user ? req.session.user._id : req.body.userId;
-  
   const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
   const userAgent = req.get('User-Agent') || '';
 
@@ -100,27 +104,51 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    // ...existing user & address handling code...
+    let user = req.session.user;
+
+    // Case 2: If user not logged in, create guest user
+    if (!user) {
+      user = await User.findOne({ phoneNumber: phone });
+
+      if (!user) {
+        user = new User({
+          name,
+          email,
+          phoneNumber: phone,
+          role: 'guest',
+          isVerified: true,
+        });
+        await user.save();
+      }
+
+      req.session.user = user; // Store user in session
+    }
+
+    // Store delivery address
+    await DeliveryAddress.create({
+      user: user._id,
+      district: deliveryAddress.district,
+      village: deliveryAddress.village || '',
+      street: deliveryAddress.street || '',
+    });
 
     const district = deliveryAddress.district;
     const allowCOD = ['Kampala', 'Wakiso'].includes(district);
 
-    // Log that user proceeded to payment
     await logUserActivity({
-      userId,
+      userId: user._id,
       sessionId,
       activityType: 'proceeded_to_payment',
       pageUrl: '/checkout/payment',
       userAgent,
-      ipAddress:req.ip,
+      ipAddress: req.ip,
       metadata: {
         district,
         allowCOD,
-        cartSize: req.session.cart ? req.session.cart.length : 0
-      }
+        cartSize: req.session.cart ? req.session.cart.length : 0,
+      },
     });
 
-    // --- Facebook CAPI event for AddShippingInfo ---
     await sendFacebookEvent({
       eventName: 'AddShippingInfo',
       firstName: name,
@@ -130,11 +158,12 @@ router.post('/', async (req, res) => {
       userAgent,
       productId: 'checkout_shipping',
       productName: 'Checkout Shipping Information',
-      price: req.session.cart?.reduce((sum, item) => sum + item.price * item.qty, 0) || 0,
+      price: req.session.cart?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0,
       pixelId: process.env.FB_PIXEL_ID,
       accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
-      externalId: userId,
+      externalId: user._id.toString(),
       sourceUrl: req.originalUrl,
+      cart: req.session.cart,
     });
 
     res.render('checkout/payment', {
@@ -154,6 +183,7 @@ router.post('/', async (req, res) => {
     });
   }
 });
+
 
 router.post('/confirm', isGuest, async (req, res) => {
   try {
@@ -231,7 +261,6 @@ const { getMomoToken } = require('../../utils/momoTokenManager');
 
 const { v4: uuidv4 } = require('uuid');
 
-
 router.post('/process', isGuest, async (req, res) => {
   const { paymentMethod, momoNumber, totalAmount, deliveryAddress } = req.body;
   const cart = req.session.cart || [];
@@ -287,7 +316,26 @@ router.post('/process', isGuest, async (req, res) => {
 
     await order.save();
 
-    // Send confirmation email
+    // Send Facebook event for COD immediately
+    if (paymentMethod === 'cod') {
+      await sendFacebookEvent({
+        eventName: 'Purchase',
+        firstName: user.name,
+        email: user.email,
+        phone: user.phoneNumber,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        productId: (order.items || []).map(item => item.productId).join(','),
+        productName: 'Order Checkout (COD)',
+        price: Number(totalAmount),
+        pixelId: process.env.FB_PIXEL_ID,
+        accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+        externalId: user._id.toString(),
+        sourceUrl: req.get('Referer'),
+      });
+    }
+
+    // Send order confirmation email
     const itemsList = cart.map(item => `
       <tr>
         <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
@@ -322,19 +370,14 @@ router.post('/process', isGuest, async (req, res) => {
     });
 
     // Log user activity
-    const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
-    const userAgent = req.get('User-Agent') || '';
-    const ipAddress = req.ip;
-    const referrer = req.get('Referrer') || '';
-
     await logUserActivity({
       userId: user._id,
-      sessionId,
+      sessionId: req.sessionID || req.cookies['sessionId'] || 'unknown_session',
       activityType: 'order_placed',
       pageUrl: req.originalUrl,
-      userAgent,
-      ipAddress,
-      referrer,
+      userAgent: req.get('User-Agent') || '',
+      ipAddress: req.ip,
+      referrer: req.get('Referer') || '',
       metadata: {
         orderId: order._id,
         total: order.total,
@@ -349,60 +392,95 @@ router.post('/process', isGuest, async (req, res) => {
     // Clear cart
     req.session.cart = [];
 
-    // Initiate mobile money payment
-    if (paymentMethod === 'prepaid') {
-      const externalId = order.transactions[order.transactions.length - 1].externalId;
-      const accessToken = await getMomoToken();
-
-      await axios.post(
-        `${process.env.MOMO_BASE_URL}/collection/v1_0/requesttopay`,
-        {
-          amount: totalAmount,
-          currency: process.env.CURRENCY,
-          externalId,
-          payer: {
-            partyIdType: 'MSISDN',
-            partyId: momoNumber,
-          },
-          payerMessage: 'Payment for your order',
-          payeeNote: 'Thank you for your purchase',
-        },
-        {
-          headers: {
-            'X-Reference-Id': externalId,
-            'X-Target-Environment': process.env.TARGET_ENVIRONMENT,
-            'Ocp-Apim-Subscription-Key': process.env.MOMO_SUBSCRIPTION_KEY,
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      console.log('Payment request sent with ref:', externalId);
-      return res.render('checkout/paymentPending', {
-        title: 'Processing Payment',
-        orderId: order._id 
+    // Handle COD success page
+    if (paymentMethod === 'cod') {
+      return res.render('checkout/success', {
+        title: 'Order Received',
+        orderId: order._id
       });
     }
-// Track purchase or payment intent with Facebook CAPI
-await sendFacebookEvent({
-  eventName: paymentMethod === 'prepaid' ? 'InitiateCheckout' : 'Purchase',
-  email: user.email,
-  phone: user.phoneNumber,
-  firstName: user.name,
-  externalId: user._id.toString(),
-  ip: ipAddress,
-  userAgent,
-  productId: cart.map(item => item._id).join(','),
-  productName: 'Cart Checkout',
-  price: Number(totalAmount),
-  pixelId: process.env.FB_PIXEL_ID,
-  accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
-  sourceUrl: req.protocol + '://' + req.get('host') + req.originalUrl
-});
-    res.render('checkout/success', {
-      title: 'Order Placed Successfully!'
+
+    // Render payment pending page for prepaid
+    const externalId = order.transactions[order.transactions.length - 1].externalId;
+    res.render('checkout/paymentPending', {
+      title: 'Processing Payment',
+      orderId: order._id
     });
+
+    // Background MOMO payment processing
+    setImmediate(async () => {
+      try {
+        const accessToken = await getMomoToken();
+
+        await axios.post(
+          `${process.env.MOMO_BASE_URL}/collection/v1_0/requesttopay`,
+          {
+            amount: totalAmount,
+            currency: process.env.CURRENCY,
+            externalId,
+            payer: {
+              partyIdType: 'MSISDN',
+              partyId: momoNumber,
+            },
+            payerMessage: 'Payment for your order',
+            payeeNote: 'Thank you for your purchase',
+          },
+          {
+            headers: {
+              'X-Reference-Id': externalId,
+              'X-Target-Environment': process.env.TARGET_ENVIRONMENT,
+              'Ocp-Apim-Subscription-Key': process.env.MOMO_SUBSCRIPTION_KEY,
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+
+        console.log('Payment request sent with ref:', externalId);
+
+        // Wait and then check status
+        await new Promise(resolve => setTimeout(resolve, 8000));
+        const statusResp = await axios.get(
+          `${process.env.MOMO_BASE_URL}/collection/v1_0/requesttopay/${externalId}`,
+          {
+            headers: {
+              'X-Target-Environment': process.env.TARGET_ENVIRONMENT,
+              'Ocp-Apim-Subscription-Key': process.env.MOMO_SUBSCRIPTION_KEY,
+              Authorization: `Bearer ${accessToken}`
+            }
+          }
+        );
+
+        const paymentStatus = statusResp.data.status;
+        if (paymentStatus === 'SUCCESSFUL') {
+          order.paymentStatus = 'Paid';
+          const tx = order.transactions.find(t => t.externalId === externalId);
+          if (tx) tx.status = 'SUCCESSFUL';
+          await order.save();
+
+          await sendFacebookEvent({
+            eventName: 'Purchase',
+            firstName: user.name,
+            email: user.email,
+            phone: user.phoneNumber,
+            ip: req.ip,
+            userAgent: req.get('User-Agent'),
+            productId: (order.items || []).map(item => item.productId).join(','),
+            productName: 'Order Checkout',
+            price: Number(totalAmount),
+            pixelId: process.env.FB_PIXEL_ID,
+            accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+            externalId: user._id.toString(),
+            sourceUrl: req.get('Referer'),
+          });
+
+          console.log(`Payment for order ${order._id} confirmed`);
+        }
+      } catch (err) {
+        console.error('Background payment or Facebook event error:', err?.response?.data || err.message);
+      }
+    });
+
   } catch (err) {
     console.error('Order processing error:', err?.response?.data || err.message);
     res.status(500).send('Something went wrong. Please try again.');
@@ -412,6 +490,10 @@ await sendFacebookEvent({
 
 router.post('/retry-payment', isGuest, async (req, res) => {
   const { orderId } = req.body;
+
+  if (!orderId || typeof orderId !== 'string') {
+    return res.status(400).send('Invalid order ID.');
+  }
 
   try {
     const order = await Order.findById(orderId);
@@ -438,7 +520,8 @@ router.post('/retry-payment', isGuest, async (req, res) => {
           partyId: order.momoNumber,
         },
         payerMessage: 'Payment for your order',
-        payeeNote: 'Thank you for your purchase'      },
+        payeeNote: 'Thank you for your purchase',
+      },
       {
         headers: {
           'X-Reference-Id': referenceId,
@@ -451,7 +534,8 @@ router.post('/retry-payment', isGuest, async (req, res) => {
     );
 
     console.log('Retry payment request sent for order:', orderId);
-    
+
+    // Log activity
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userAgent = req.get('User-Agent') || '';
     const ipAddress = req.ip;
@@ -470,16 +554,54 @@ router.post('/retry-payment', isGuest, async (req, res) => {
         orderId: order._id,
         total: order.total,
         momoNumber: order.momoNumber,
-        previousStatus: order.paymentStatus
+        previousStatus: order.paymentStatus,
+      },
+    });
+
+    // Asynchronously check payment status after delay
+    setImmediate(async () => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds
+        const paymentStatus = await getMomoPaymentStatus(referenceId, accessToken);
+
+        if (paymentStatus === 'SUCCESSFUL') {
+          await Order.findByIdAndUpdate(orderId, {
+            paymentStatus: 'Paid',
+            momoReferenceId: referenceId,
+          });
+
+          await sendFacebookEvent({
+            eventName: 'Purchase',
+            firstName: user.name,
+            email: user.email,
+            phone: user.phoneNumber,
+            ip: req.ip,
+            userAgent: req.get('User-Agent'),
+            productId: (order.items || []).map(item => item.productId).join(','),
+            productName: 'Order Checkout',
+            price: Number(latestTx.amount),
+            pixelId: process.env.FB_PIXEL_ID,
+            accessToken: process.env.FB_CAPI_ACCESS_TOKEN,
+            externalId: user._id.toString(),
+            sourceUrl: req.get('Referer'),
+          });
+
+          console.log('Payment successful after retry for order:', orderId);
+        } else {
+          console.log('Payment status after retry is still pending or failed for order:', orderId);
+        }
+      } catch (statusErr) {
+        console.error('Error checking retry payment status:', statusErr.stack || statusErr.message);
       }
     });
-    
+
     res.render('checkout/paymentPending', {
       title: 'Processing Payment',
-      orderId });
+      orderId
+    });
 
   } catch (err) {
-    console.error('Retry payment error:', err?.response?.data || err.message);
+    console.error('Retry payment error:', err.stack || err.message);
     res.status(500).send('Failed to retry payment. Try again later.');
   }
 });

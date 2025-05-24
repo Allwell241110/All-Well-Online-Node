@@ -3,26 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title || 'All Well Online Store' %></title>
-  <meta name="description" content="<%= metaDescription || 'Discover quality products across a range of categories at All Well Online Store. Great deals and fast delivery in Uganda.' %>">
-  <meta name="keywords" content="<%= metaKeywords || 'online shopping, electronics, fashion, Uganda store' %>">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta property="og:title" content="<%= ogTitle || title %>">
-  <meta property="og:description" content="<%= ogDescription || metaDescription %>">
-  <meta property="og:title" content="<%= ogTitle || title || 'Default OG Title' %>">
-<meta property="og:description" content="<%= ogDescription || metaDescription || 'Default OG Description' %>">
-<meta property="og:image" content="<%= ogImage || 'https://www.allwellonline.shop/images/all_well_online.png' %>">
-<meta property="og:url" content="<%= ogUrl || 'https://www.allwellonline.shop' + req.originalUrl %>">
-<meta property="og:type" content="website">
-
-<link rel="canonical" href="<%= canonicalUrl || 'https://www.allwellonline.shop.com' + req.originalUrl %>">
-
-  <!-- Structured data -->
+  <title>Home - All Well Online Store</title>
+  <meta name="description" content="Shop online in Uganda with All Well Store. From electronics to Home and Office products, explore quality products at the best prices.">
+  <meta name="keywords" content="Uganda online store, electronics, home and office products, shop online Uganda, Uganda online Shopping">
+  <meta property="og:title" content="All Well Online Shopping – Quality Delivered">
+  <meta property="og:description" content="Shop now at All Well Store. Fast delivery. Great deals. Best quality in Uganda.">
+  <meta property="og:image" content="https://www.allwellonline.shop/images/all_well_online.png">
+  <meta property="og:url" content="https://www.allwellonline.shop/">
+  <meta property="og:type" content="website">
+   <!-- Structured data -->
   <%- typeof structuredData !== 'undefined' ? `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>` : '' %>
   
   <% if (metaCategories && metaCategories.length > 0) { %>
   <script type="application/ld+json">
-    <%= JSON.stringify({
+    <%- JSON.stringify({
       "@context": "https://schema.org",
       "@type": "ItemList",
       "name": "Shop Categories",
@@ -30,30 +24,13 @@
         "@type": "ListItem",
         "position": index + 1,
         "name": meta.name,
-        "url": `https://yourdomain.com/categories/main-categories/${meta._id}`
+        "url": `https://www.allwellonline.com/categories/main-categories/${meta._id}`
       }))
     }) %>
   </script>
-<% } %>
-  
-  <link rel="stylesheet" href="/css/style.css">
-  <!-- Meta Pixel Code -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '617349214375911');
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=617349214375911&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
+  <% } %>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <%- include('./partials/header', {cartItemCount, user}) %>
@@ -76,8 +53,7 @@ src="https://www.facebook.com/tr?id=617349214375911&ev=PageView&noscript=1"
     }
   });
 </script>
-
-<script>
+  <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Show preloader on link click
     document.querySelectorAll('a').forEach(link => {
@@ -97,5 +73,22 @@ src="https://www.facebook.com/tr?id=617349214375911&ev=PageView&noscript=1"
   });
 </script>
   <%- include('./partials/footer') %>
+    <!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '617349214375911');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=617349214375911&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </body>
 </html>

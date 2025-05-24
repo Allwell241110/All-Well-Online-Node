@@ -1,3 +1,9 @@
+const crypto = require('crypto');
+const axios = require('axios');
+function hash(data) {
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
 async function sendFacebookEvent({
   eventName,
   email,
@@ -12,6 +18,7 @@ async function sendFacebookEvent({
   sourceUrl,
   externalId,
   firstName,
+  productId,
 }) {
   const payload = {
   data: [
@@ -46,3 +53,5 @@ async function sendFacebookEvent({
 
   return response.data;
 }
+
+module.exports = { sendFacebookEvent };
