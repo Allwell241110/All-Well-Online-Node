@@ -10,9 +10,9 @@
       value="<%= user ? user.name : '' %>" 
       class="form-control" 
       required>
-  </div>
+  </div>  
 
-  <!-- Email -->
+  <!-- Email -->  
   <div class="form-group">
     <label for="email">Email Address (Optional)</label>
     <input 
@@ -22,25 +22,27 @@
       value="<%= user ? user.email : '' %>" 
       class="form-control" 
       >
-  </div>
+  </div>  
 
-  <!-- Phone -->
+  <!-- Phone -->  
   <div class="form-group">
     <label for="phone">Phone Number *</label>
     <input 
-      type="tel" 
-      name="phone" 
-      id="phone" 
-      placeholder="Enter phone number" 
-      class="form-control" 
-      required>
-  </div>
+  type="tel" 
+  name="phone" 
+  id="phone" 
+  placeholder="Enter phone number" 
+  class="form-control" 
+  required
+  value="<%= user && user.phoneNumber ? user.phoneNumber : '' %>">
+  </div>  
 
-  <!-- Include delivery address partial -->
-  <%- include('../partials/checkout/deliveryAddress', { districts }) %>
+  <!-- Delivery address partial, passing deliveryAddress -->
+  <%- include('../partials/checkout/deliveryAddress', { districts, deliveryAddress }) %>
+
   <% if (error) { %>
-  <p class="error"><%= error %></p>
-<% } %>
-<button type="submit">Proceed...</button>
-</form>
+    <p class="error"><%= error %></p>
+  <% } %>
 
+  <button type="submit">Proceed...</button>
+</form>

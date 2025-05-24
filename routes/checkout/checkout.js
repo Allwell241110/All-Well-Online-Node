@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
     const sessionId = req.sessionID || req.cookies['sessionId'] || 'unknown_session';
     const userId = req.user ? req.user._id : null;
     const userEmail = req.user ? req.user.email : null;
-    const userPhone = req.user ? req.user.phone : null;
+    const userPhone = req.user ? req.user.phoneNumber || req.user.phone : null; // be sure to check your User schema field name
     const username = req.user ? req.user.name : null;
 
     console.log('Session ID:', sessionId);
@@ -37,24 +37,21 @@ router.get('/', async (req, res) => {
     const cartItemsCount = req.session.cart ? req.session.cart.length : 0;
     console.log('Cart Items Count:', cartItemsCount);
 
-if (userId && mongoose.Types.ObjectId.isValid(userId)) {
-    await logUserActivity({
-      userId,
-      sessionId,
-      activityType: 'view_checkout',
-      pageUrl: req.originalUrl,
-      referrer: req.get('Referrer') || '',
-      userAgent: req.get('User-Agent') || '',
-      ipAddress: req.ip,
-      metadata: {
-        cartItemsCount
-      }
-    });
-    console.log('Logged user activity.');
-  } else {
-  console.warn('Skipping activity log: invalid or missing userId');
-}
-    
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      await logUserActivity({
+        userId,
+        sessionId,
+        activityType: 'view_checkout',
+        pageUrl: req.originalUrl,
+        referrer: req.get('Referrer') || '',
+        userAgent: req.get('User-Agent') || '',
+        ipAddress: req.ip,
+        metadata: { cartItemsCount }
+      });
+      console.log('Logged user activity.');
+    } else {
+      console.warn('Skipping activity log: invalid or missing userId');
+    }
 
     const totalPrice = req.session.cart?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
     console.log('Total checkout price:', totalPrice);
@@ -76,11 +73,21 @@ if (userId && mongoose.Types.ObjectId.isValid(userId)) {
     });
     console.log('Facebook CAPI event sent.');
 
+    // Fetch delivery address for user if logged in
+    let deliveryAddress = null;
+    if (userId) {
+      deliveryAddress = await DeliveryAddress.findOne({ user: userId }).lean();
+      console.log('Fetched deliveryAddress:', deliveryAddress);
+    }
+
     res.render('checkout/shippingInformation', {
       title: 'Checkout',
       districts,
-      error: ''
+      error: '',
+      user: req.user,
+      deliveryAddress // pass it here
     });
+
     console.log('Checkout page rendered successfully.');
   } catch (error) {
     console.error('Failed to load checkout page:', error.message);
