@@ -6,6 +6,10 @@ body {
   background-color: #f9f9f9;
 }
 
+a {
+  text-decoration: none;
+}
+
 //404
 .not-found-page {
   display: flex;
@@ -339,14 +343,6 @@ body {
     }
   }
 }
-
-//Edit Categories Form:
-
-
-
-
-
-
 
 //PRODUCT FORM:
 .add-product-form {
