@@ -2,19 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home - All Well Online Store</title>
-  <meta name="description" content="Shop online in Uganda with All Well Store. From electronics to Home and Office products, explore quality products at the best prices.">
-  <meta name="keywords" content="Uganda online store, electronics, home and office products, shop online Uganda, Uganda online Shopping">
-  <meta property="og:title" content="All Well Online Shopping – Quality Delivered">
-  <meta property="og:description" content="Shop now at All Well Store. Fast delivery. Great deals. Best quality in Uganda.">
-  <meta property="og:image" content="https://www.allwellonline.shop/images/all_well_online.png">
-  <meta property="og:url" content="https://www.allwellonline.shop/">
-  <meta property="og:type" content="website">
-   <!-- Structured data -->
-  <%- typeof structuredData !== 'undefined' ? `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>` : '' %>
-  
-  <% if (metaCategories && metaCategories.length > 0) { %>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title><%= title || 'Home - All Well Online Store' %></title>
+<meta name="description" content="<%= metaDescription || 'Shop online in Uganda with All Well Store. From electronics to Home and Office products, explore quality products at the best prices.' %>">
+<meta name="keywords" content="<%= metaKeywords || 'Uganda online store, electronics, home and office products, shop online Uganda, Uganda online Shopping' %>">
+
+<meta property="og:title" content="<%= ogTitle || 'All Well Online Shopping – Quality Delivered' %>">
+<meta property="og:description" content="<%= ogDescription || 'Shop now at All Well Store. Fast delivery. Great deals. Best quality in Uganda.' %>">
+<meta property="og:image" content="<%= ogImage || 'https://www.allwellonline.shop/images/all_well_online.png' %>">
+<meta property="og:url" content="<%= ogUrl || 'https://www.allwellonline.shop' + originalUrl %>">
+<meta property="og:type" content="website">
+
+<% if (canonicalUrl) { %>
+  <link rel="canonical" href="<%= canonicalUrl %>">
+<% } %>
+
+<!-- Structured data -->
+<%- structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>` : '' %>
+
+<% if (metaCategories && metaCategories.length > 0) { %>
   <script type="application/ld+json">
     <%- JSON.stringify({
       "@context": "https://schema.org",
@@ -24,11 +31,11 @@
         "@type": "ListItem",
         "position": index + 1,
         "name": meta.name,
-        "url": `https://www.allwellonline.com/categories/main-categories/${meta._id}`
+        "url": `https://www.allwellonline.shop/categories/main-categories/${meta._id}`
       }))
     }) %>
   </script>
-  <% } %>
+<% } %>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
