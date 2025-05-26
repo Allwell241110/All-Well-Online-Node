@@ -136,6 +136,10 @@ app.use('/user-activity', userActivityRoutes);
 const sitemapRoute = require('./routes/sitemap/sitemap');
 app.use('/sitemap.xml', sitemapRoute);
 
+//Facebook catalogue
+const facebookCatalogueRoute = require('./routes/facebookCatalogue/facebookCatalogue');
+app.use('/facebook-catalog', facebookCatalogueRoute);
+
 // Home route
 const homeRoute = require('./routes/home/constant');
 app.use('/', homeRoute);
