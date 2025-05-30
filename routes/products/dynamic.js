@@ -317,22 +317,91 @@ router.get('/:idSlug', async (req, res) => {
     }
 
     const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "name": product.name,
-      "image": Array.isArray(product.images) ? product.images.map(img => img.url) : [],
-      "description": product.description,
-      "sku": product._id.toString(),
-      "brand": { "@type": "Brand", "name": product.brand },
-      "offers": {
-        "@type": "Offer",
-        "url": `${process.env.FRONT_END_HOST}${req.originalUrl}`,
-        "priceCurrency": "UGX",
-        "price": product.salePrice || product.price,
-        "availability": "https://schema.org/InStock",
-        "itemCondition": "https://schema.org/NewCondition"
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": product.name,
+  "image": Array.isArray(product.images) ? product.images.map(img => img.url) : [],
+  "description": product.description,
+  "sku": product._id.toString(),
+  "brand": {
+    "@type": "Brand",
+    "name": product.brand || "Unbranded"
+  },
+  "offers": {
+  "@type": "Offer",
+  "url": `${process.env.FRONT_END_HOST}${req.originalUrl}`,
+  "priceCurrency": "UGX",
+  "price": product.salePrice || product.price,
+  "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+  "itemCondition": "https://schema.org/NewCondition",
+  "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+
+  "hasMerchantReturnPolicy": {
+    "@type": "MerchantReturnPolicy",
+    "applicableCountry": "UG",
+    "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+    "merchantReturnDays": 7,
+    "returnMethod": "https://schema.org/ReturnByMail",
+    "returnFees": "https://schema.org/FreeReturn"
+  },
+
+  "shippingDetails": {
+    "@type": "OfferShippingDetails",
+    "shippingDestination": {
+      "@type": "DefinedRegion",
+      "addressCountry": "UG"
+    },
+    "deliveryTime": {
+      "@type": "ShippingDeliveryTime",
+      "handlingTime": {
+        "@type": "QuantitativeValue",
+        "minValue": 0,
+        "maxValue": 1,
+        "unitCode": "d"
+      },
+      "transitTime": {
+        "@type": "QuantitativeValue",
+        "minValue": 2,
+        "maxValue": 5,
+        "unitCode": "d"
       }
-    };
+    },
+    "shippingRate": {
+      "@type": "MonetaryAmount",
+      "value": 7500,
+      "currency": "UGX"
+    }
+  }
+},
+  ...(product.averageRating && product.numReviews ? {
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": product.averageRating.toString(),
+      "reviewCount": product.numReviews.toString(),
+      "bestRating": "5",
+      "worstRating": "1"
+    }
+  } : {}),
+  ...(product.reviews && product.reviews.length > 0 ? {
+    "review": product.reviews.slice(0, 5).map(r => ({
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": r.userName || "Anonymous"
+      },
+      "datePublished": r.createdAt
+        ? new Date(r.createdAt).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      "reviewBody": r.comment || "",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": r.rating.toString(),
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    }))
+  } : {})
+};
 
     res.render('products/product', {
       title: `${product.name} - All Well Online`,
