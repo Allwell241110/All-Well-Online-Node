@@ -42,43 +42,6 @@
 <body>
   <%- include('./partials/header', {cartItemCount, user}) %>
   <%- body %>
-  <div id="preloader">
-    <div class="spinner"></div>
-  </div>
-  <script>
-  // Hide preloader on full load
-  window.addEventListener('load', () => {
-    const loader = document.getElementById('preloader');
-    if (loader) loader.style.display = 'none';
-  });
-
-  // Hide preloader on back navigation (from cache)
-  window.addEventListener('pageshow', (event) => {
-    if (event.persisted) {
-      const loader = document.getElementById('preloader');
-      if (loader) loader.style.display = 'none';
-    }
-  });
-</script>
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Show preloader on link click
-    document.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        const loader = document.getElementById('preloader');
-        if (loader) loader.style.display = 'flex';
-      });
-    });
-
-    // Show preloader on form submit
-    document.querySelectorAll('form').forEach(form => {
-      form.addEventListener('submit', () => {
-        const loader = document.getElementById('preloader');
-        if (loader) loader.style.display = 'flex';
-      });
-    });
-  });
-</script>
   <%- include('./partials/footer') %>
     <!-- Meta Pixel Code -->
 <script>

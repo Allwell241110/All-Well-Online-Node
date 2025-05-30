@@ -3020,35 +3020,6 @@ $user-border: #fff;
   }
 }
 
-#preloader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(34, 34, 34, 0.85); // Matches footer's #222 with transparency
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(3px); // Optional for a subtle frosted effect
-
-  .spinner {
-    border: 5px solid #444; // Slightly lighter than #222 for contrast
-    border-top: 5px solid #fff; // White to match footer text
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 0.8s linear infinite;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .about-page {
   max-width: 800px;
   margin: 2rem auto;
