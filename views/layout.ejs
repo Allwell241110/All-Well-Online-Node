@@ -38,12 +38,7 @@
 <% } %>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <%- include('./partials/header', {cartItemCount, user}) %>
-  <%- body %>
-  <%- include('./partials/footer') %>
-    <!-- Meta Pixel Code -->
+  <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -56,9 +51,14 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 fbq('init', '617349214375911');
 fbq('track', 'PageView');
 </script>
-<noscript><img height="1" width="1" style="display:none"
+</head>
+<body>
+  <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id=617349214375911&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
+  <%- include('./partials/header', {cartItemCount, user}) %>
+  <%- body %>
+  <%- include('./partials/footer') %>
 </body>
 </html>
