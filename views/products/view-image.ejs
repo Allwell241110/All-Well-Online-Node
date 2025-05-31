@@ -8,25 +8,55 @@
     html, body {
       height: 100%;
       margin: 0;
-      background: #111;
+      background: rgba(0, 0, 0, 0.95);
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
+
     .full-image {
-      max-width: 90vw;
-      max-height: 90vh;
-      box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      transition: transform 0.3s ease;
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 3px;
+      box-shadow: 0 0 50px rgba(255, 255, 255, 0.1);
+      transition: transform 0.3s ease, opacity 0.3s ease;
       cursor: zoom-out;
+      opacity: 0;
+      transform: scale(0.98);
+      animation: fadeIn 0.3s forwards;
     }
-    .full-image:hover {
-      transform: scale(1.02);
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Optional: Add smooth zoom on double click */
+    .zoomed {
+      transform: scale(1.5);
+      cursor: zoom-in;
     }
   </style>
 </head>
 <body>
-  <img src="<%= imageUrl %>" alt="Full View" class="full-image" />
+  <img src="<%= imageUrl %>" alt="Full View" class="full-image" id="image" />
+
+  <script>
+    const img = document.getElementById('image');
+
+    img.addEventListener('click', () => {
+      // Optional: Zoom toggle
+      img.classList.toggle('zoomed');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        window.history.back(); // Or close modal if used
+      }
+    });
+  </script>
 </body>
 </html>
