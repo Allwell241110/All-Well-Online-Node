@@ -84,6 +84,11 @@ router.get('/', async (req, res) => {
   }
 };
 
+    // Fallback for viewed products if still empty
+    if (viewedProducts.length === 0) {
+      viewedProducts = productsWithDiscount;
+    }
+
     res.render('home', {
   title: 'Home - All Well Online Store',
   metaDescription: 'Shop online in Uganda with All Well Store. From electronics to Home and Office products, explore quality products at the best prices.',
