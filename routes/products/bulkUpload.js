@@ -3,29 +3,37 @@ const multer = require('multer');
 const csvParser = require('csv-parser');
 const { Readable } = require('stream');
 const axios = require('axios');
+const slugify = require('slugify');
+const fs = require('fs');
+const path = require('path');
+
 const Product = require('../../models/Product');
 const SubCategory = require('../../models/SubCategory');
-const { isUser, isAdmin, isGuest } = require('../../middleware/auth');
+const { isAdmin } = require('../../middleware/auth');
 
 const router = express.Router();
 const upload = multer();
 
-// Upload buffer to Imgur
-const uploadToImgur = async (buffer) => {
-  const base64Img = buffer.toString('base64');
-  console.log('Uploading image to Imgur...');
-  const res = await axios.post('https://api.imgur.com/3/image', {
-    image: base64Img,
-    type: 'base64',
-  }, {
-    headers: {
-      Authorization: `Client-ID ${process.env.IMGUR_CLIENT_ID}`,
-    },
-  });
+const uploadsDir = path.join(__dirname, '../../public/uploads');
 
-  const { link, deletehash } = res.data.data;
-  console.log('Image uploaded:', link);
-  return { url: link, deleteHash: deletehash };
+// Save image to /uploads/products/ with slugified name and index
+const saveImageToServer = async (buffer, originalUrl, nameSlug, index = 1) => {
+  const ext = path.extname(new URL(originalUrl).pathname) || '.jpg';
+  const filename = `${nameSlug}-${index}${ext}`;
+  const uploadDir = path.join(uploadsDir, 'products');
+  const uploadPath = path.join(uploadDir, filename);
+
+  // Ensure directory exists
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  await fs.promises.writeFile(uploadPath, buffer);
+
+  return {
+    url: `https://www.allwellonline.shop/uploads/products/${filename}`,
+    filename
+  };
 };
 
 const fetchImageBuffer = async (url) => {
@@ -59,11 +67,17 @@ router.post('/', isAdmin, upload.single('csvFile'), async (req, res) => {
     });
 
     console.log(`Parsed ${results.length} rows from CSV`);
-
     let savedCount = 0;
 
     for (const row of results) {
-      console.log(`\nProcessing product: ${row.Name}`);
+      const productName = row.Name?.trim();
+      if (!productName) {
+        console.warn('Product name missing, skipping row');
+        continue;
+      }
+
+      const productSlug = slugify(productName, { lower: true, strict: true });
+      console.log(`\nProcessing product: ${productName} (slug: ${productSlug})`);
 
       const subCategoryName = row['Sub Category']?.trim();
       const subCategory = await SubCategory.findOne({ name: subCategoryName });
@@ -72,17 +86,18 @@ router.post('/', isAdmin, upload.single('csvFile'), async (req, res) => {
         continue;
       }
 
+      // Product images
       const productImages = [];
       for (let i = 1; i <= 4; i++) {
-        const urlField = row[`Image ${i}`]?.trim();
-        if (!urlField) {
+        const imageUrl = row[`Image ${i}`]?.trim();
+        if (!imageUrl) {
           console.log(`Image ${i} is empty, skipping`);
           continue;
         }
 
         try {
-          const buffer = await fetchImageBuffer(urlField);
-          const uploaded = await uploadToImgur(buffer);
+          const buffer = await fetchImageBuffer(imageUrl);
+          const uploaded = await saveImageToServer(buffer, imageUrl, productSlug, i);
           productImages.push(uploaded);
           console.log(`Uploaded product image ${i}: ${uploaded.url}`);
         } catch (err) {
@@ -90,12 +105,12 @@ router.post('/', isAdmin, upload.single('csvFile'), async (req, res) => {
         }
       }
 
-      // Skip product if no product image was uploaded
       if (productImages.length === 0) {
-        console.warn(`No images uploaded for product "${row.Name}", skipping...`);
+        console.warn(`No images uploaded for product "${productName}", skipping...`);
         continue;
       }
 
+      // Variants
       const variants = [];
       for (let i = 1; i <= 5; i++) {
         const name = row[`Variant Name ${i}`]?.trim();
@@ -105,12 +120,12 @@ router.post('/', isAdmin, upload.single('csvFile'), async (req, res) => {
         }
 
         let variantImage = null;
-        const imageUrl = row[`Variant Image ${i}`]?.trim();
+        const variantImageUrl = row[`Variant Image ${i}`]?.trim();
 
-        if (imageUrl) {
+        if (variantImageUrl) {
           try {
-            const buffer = await fetchImageBuffer(imageUrl);
-            variantImage = await uploadToImgur(buffer);
+            const buffer = await fetchImageBuffer(variantImageUrl);
+            variantImage = await saveImageToServer(buffer, variantImageUrl, productSlug, i);
             console.log(`Uploaded variant image ${i}: ${variantImage.url}`);
           } catch (err) {
             console.error(`Variant image ${i} upload failed:`, err.message);
@@ -133,7 +148,8 @@ router.post('/', isAdmin, upload.single('csvFile'), async (req, res) => {
       }
 
       const productData = {
-        name: row.Name?.trim(),
+        name: productName,
+        slug: productSlug,
         description: row.Description?.trim(),
         brand: row.Brand?.trim(),
         price: Number(row['Price']) || 0,

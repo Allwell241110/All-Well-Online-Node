@@ -39,7 +39,7 @@ const productSchema = new mongoose.Schema({
     }
   },
   brand: String,
-  images: [{ url: String, deleteHash: String }],
+  images: [{ url: String, filename: String }],
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory', required: true },
   stock: {
     type: Number,
