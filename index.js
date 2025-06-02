@@ -140,6 +140,9 @@ app.use('/sitemap.xml', sitemapRoute);
 const facebookCatalogueRoute = require('./routes/facebookCatalogue/facebookCatalogue');
 app.use('/facebook-catalog', facebookCatalogueRoute);
 
+//Google products feed
+app.use('/google-feed', require('./routes/googleFeeds/productFeed'));
+
 // Home route
 const homeRoute = require('./routes/home/constant');
 app.use('/', homeRoute);
