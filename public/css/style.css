@@ -2600,4 +2600,53 @@ a {
   text-decoration: underline;
 }
 
+.return-policy-wrapper {
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+.return-policy-wrapper h1 {
+  text-align: center;
+  color: #222;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+.return-policy-wrapper h2 {
+  color: #2c3e50;
+  font-size: 1.3rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.return-policy-wrapper h3 {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  color: #007BFF;
+}
+.return-policy-wrapper ul {
+  list-style: disc inside;
+  margin-bottom: 1rem;
+}
+.return-policy-wrapper ul li {
+  margin-bottom: 0.5rem;
+}
+.return-policy-wrapper p {
+  margin-bottom: 0.75rem;
+}
+.return-policy-wrapper a {
+  color: #007BFF;
+  text-decoration: none;
+}
+.return-policy-wrapper a:hover {
+  text-decoration: underline;
+}
+.return-policy-wrapper .contact-box {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #eef2f7;
+  border-left: 4px solid #007BFF;
+  border-radius: 4px;
+}
+
 /*# sourceMappingURL=style.css.map */

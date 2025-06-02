@@ -153,6 +153,13 @@ app.get('/about', (req, res) => {
 const userDashboardRoutes = require('./routes/userDashboard/userDashboard');
 app.use('/dashboard/user', userDashboardRoutes);
 
+//Return policy
+app.use('/return-policy', (req, res) => {
+  res.render('returnPolicy', {
+    title: 'Return Policy'
+  });
+});
+
 // ===== 404 Handler =====
 app.use((req, res) => {
   res.status(404).render('404', { 
