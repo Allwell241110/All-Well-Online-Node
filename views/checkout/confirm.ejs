@@ -61,19 +61,28 @@
   </form>
 
   <script>
-    document.getElementById('checkoutForm')?.addEventListener('submit', function (e) {
-      const paymentMethod = "<%= paymentMethod %>";
-      if (paymentMethod === 'prepaid') {
-        const numberInput = document.getElementById('momoNumber');
-        const number = numberInput.value.trim();
-        const validPrefixes = ['077', '078', '076'];
+  document.getElementById('checkoutForm')?.addEventListener('submit', function (e) {
+    const paymentMethod = "<%= paymentMethod %>";
+    const numberInput = document.getElementById('momoNumber');
+    
+    // For prepaid method, validate number
+    if (paymentMethod === 'prepaid') {
+      const number = numberInput.value.trim();
+      const validPrefixes = ['077', '078', '076'];
 
-        if (!/^\d{10}$/.test(number) || !validPrefixes.includes(number.slice(0, 3))) {
-          e.preventDefault();
-          alert("Please enter a valid 10-digit MTN number starting with 077, 078, or 076.");
-          numberInput.focus();
-        }
+      if (!/^\d{10}$/.test(number) || !validPrefixes.includes(number.slice(0, 3))) {
+        e.preventDefault();
+        alert("Please enter a valid 10-digit MTN number starting with 077, 078, or 076.");
+        numberInput.focus();
+        return;
       }
+    }
+
+    // Track Facebook Purchase Event
+    fbq('track', 'Purchase', {
+      value: <%= (total + deliveryFee).toFixed(2) %>,
+      currency: 'UGX'
     });
-  </script>
+  });
+</script>
 </div>
