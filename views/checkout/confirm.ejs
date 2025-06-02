@@ -83,6 +83,23 @@
       value: <%= (total + deliveryFee).toFixed(2) %>,
       currency: 'UGX'
     });
+
+    // Track Google Purchase Event
+    gtag('event', 'purchase', {
+      transaction_id: '<%= Date.now() %>', // Or your actual order ID
+      value: <%= (total + deliveryFee).toFixed(2) %>,
+      currency: 'UGX',
+      items: [
+        <% cart.forEach((item, i) => { %>
+          {
+            id: "<%= item._id %>",
+            name: "<%= item.name.replace(/"/g, '\\"') %>",
+            quantity: <%= item.quantity %>,
+            price: <%= (item.price || 0).toFixed(2) %>
+          }<%= i < cart.length - 1 ? ',' : '' %>
+        <% }) %>
+      ]
+    });
   });
 </script>
 </div>
