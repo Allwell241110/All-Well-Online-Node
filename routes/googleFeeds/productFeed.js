@@ -70,7 +70,6 @@ router.get('/', async (req, res) => {
         link: productUrl,
         image_link: product.images?.[0]?.url || `${baseUrl}/images/default_image.png`,
         brand: product.brand || 'All Well',
-        inventory: stock,
         item_group_id: product.category?._id?.toString() || 'general'
       };
 
