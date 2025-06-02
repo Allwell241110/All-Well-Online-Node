@@ -227,8 +227,10 @@ router.get('/sub-categories/:mainCategoryId', async (req, res) => {
     const subcategories = await SubCategory.find({ main: mainCategoryId });
     const subCategoryIds = subcategories.map(sub => sub._id);
     
-    const mainCategory = MainCategory.findById(mainCategoryId);
-
+    const mainCategory = await MainCategory.findById(mainCategoryId);
+    if (!mainCategory) {
+  return res.status(404).send('Main category not found');
+}
     // Step 2: Build product filter
     const productFilter = { category: { $in: subCategoryIds } };
     if (searchQuery) {
