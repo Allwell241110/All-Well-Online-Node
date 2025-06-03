@@ -8,8 +8,8 @@
 %>
 
 <section class="hot-deals">
+  <h2 class="hot-deals__title">Hot Deals</h2>
   <div class="hot-deals__container">
-    <h2 class="hot-deals__title">Hot Deals</h2>
     <div class="hot-deals__grid">
       <% hotDeals.forEach(product => { 
         const discount = product.salePrice && product.price ? Math.round(100 * (product.price - product.salePrice) / product.price) : 0;

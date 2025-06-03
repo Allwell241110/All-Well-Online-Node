@@ -6,56 +6,12 @@
   </div>
 
   <div class="header-container">
+    <div class="hamburger-icons-wrapper">
     <!-- Hamburger Icon (for mobile) -->
     <div class="hamburger" onclick="toggleMenu()">
       <div></div><div></div><div></div>
     </div>
-
-<!-- Sidebar Menu -->
-<div id="sidebar" class="sidebar">
-  <ul>
-    <h1>Links:</h1>
-    <li><a href="/">Home</a></li>
-    <li><a href="/products">Products</a></li>
-    <li><a href="/cart">Cart (<%= cartItemCount %>)</a></li>
-    <% if (user) { %>
-    <li><a href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>">Profile</a></li>
-    <li><a href="/about">About</a></li>
-<% } else { %>
-  <li><a href="/auth/login">Login</a></li>
-<% } %>
-
-    <% if (user && user.role === 'admin') { %>
-      <h1>Admin:</h1>
-      <li><a href="/products/constant/product-nature">Add Product</a></li>
-      <li><a href="/upload-csv">Bulk Upload</a></li>
-      <li><a href="/categories/constant/all-categories">Manage Categories</a></li>
-      <li><a href="/orders">Orders</a></li>
-    <% } %>
-
-    <h1>Categories:</h1>
-    <% metaCategories.forEach(category => { %>
-  <li>
-    <a 
-      href="/categories/main-categories/<%= category._id %>" 
-      class="meta-category-link" 
-      data-category-name="<%= category.name %>">
-      <%= category.name %>
-    </a>
-  </li>
-<% }); %>
-  </ul>
-</div>
-
-    <!-- Overlay to Close Sidebar -->
-    <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-    <!-- Search Bar Form -->
-    <form id="searchForm" class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search products..." required>
-      <button type="submit">Search</button>
-    </form>
-
+    <div class="cart-icon-profile-wrapper">
     <!-- Cart Icon Section -->
     <div class="cart-icon">
       <a href="/cart">
@@ -67,14 +23,13 @@
         <% } %>
       </a>
     </div>
-
     <!-- User Login/Profile Section -->
     <div class="user-profile">
-  <% if (user) { %>
-    <a 
-      href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>" 
-      class="profile-link"
-    >
+      <% if (user) { %>
+        <a 
+          href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>" 
+          class="profile-link"
+         >
       <span><%= user.name %></span>
     </a>
     <form action="/auth/logout" method="POST" class="logout-form">
@@ -85,6 +40,65 @@
     <a href="/auth/login" class="login-btn">Login</a>
   <% } %>
 </div>
+    </div>
+    </div>
+
+
+<!-- Sidebar Menu -->
+<!-- Sidebar Menu -->
+<div id="sidebar" class="sidebar">
+  <div class="section">
+    <h2 class="section-title">Navigation</h2>
+    <ul class="links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/products">Products</a></li>
+      <li><a href="/cart">Cart (<%= cartItemCount %>)</a></li>
+      <li><a href="/about">About</a></li>      
+      <% if (user) { %>
+        <li><a href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>">Profile</a></li>
+      <% } else { %>
+        <li><a href="/auth/login">Login</a></li>
+      <% } %>
+    </ul>
+  </div>
+
+  <% if (user && user.role === 'admin') { %>
+    <div class="section">
+      <h2 class="section-title">Admin Panel</h2>
+      <ul class="admin-links">
+        <li><a href="/products/constant/product-nature">Add Product</a></li>
+        <li><a href="/upload-csv">Bulk Upload</a></li>
+        <li><a href="/categories/constant/all-categories">Manage Categories</a></li>
+        <li><a href="/orders">Orders</a></li>
+      </ul>
+    </div>
+  <% } %>
+
+  <div class="section">
+    <h2 class="section-title">Our Categories</h2>
+    <ul class="categories">
+      <% metaCategories.forEach(category => { %>
+        <li>
+          <a 
+            href="/categories/main-categories/<%= category._id %>" 
+            class="meta-category-link" 
+            data-category-name="<%= category.name %>">
+            <%= category.name %>
+          </a>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+</div>
+
+    <!-- Overlay to Close Sidebar -->
+    <div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+    <!-- Search Bar Form -->
+    <form id="searchForm" class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search products..." required>
+      <button type="submit">Search</button>
+    </form>
 
   </div>
 </div>
