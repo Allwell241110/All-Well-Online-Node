@@ -22,23 +22,23 @@
           </tr>
         </thead>
         <tbody>
-          <% orders.forEach((order, index) => { %>
-            <tr>
-              <td><%= index + 1 %></td>
-              <td><%= order.createdAt.toDateString() %></td>
-              <td>
-                <ul>
-                  <% order.items.forEach(item => { %>
-                    <li><%= item.name %> (x<%= item.quantity %>)</li>
-                  <% }); %>
-                </ul>
-              </td>
-              <td>UGX <%= order.total.toLocaleString() %></td>
-              <td><%= order.status %></td>
-              <td><%= order.paymentStatus %></td>
-            </tr>
-          <% }) %>
-        </tbody>
+  <% orders.forEach((order, index) => { %>
+    <tr class="order-row" data-id="<%= order._id %>">
+      <td><%= index + 1 %></td>
+      <td><%= order.createdAt.toDateString() %></td>
+      <td>
+        <ul>
+          <% order.items.forEach(item => { %>
+            <li><%= item.name %> (x<%= item.quantity %>)</li>
+          <% }); %>
+        </ul>
+      </td>
+      <td>UGX <%= order.total.toLocaleString() %></td>
+      <td><%= order.status %></td>
+      <td><%= order.paymentStatus %></td>
+    </tr>
+  <% }) %>
+</tbody>
       </table>
     <% } else { %>
       <p>No orders placed yet.</p>
@@ -99,3 +99,20 @@
     <% } %>
   </section>
 </div>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const orderRows = document.querySelectorAll('.order-row');
+
+    orderRows.forEach(row => {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => {
+        const orderId = row.getAttribute('data-id');
+        if (orderId) {
+          window.location.href = `/orders/${orderId}`;
+        }
+      });
+    });
+  });
+</script>

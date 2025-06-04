@@ -595,7 +595,8 @@ a {
 }
 
 .product-details {
-  padding: 2rem 1rem;
+  padding: 0rem;
+  padding-right: 0.2rem;
   background: #f9f9f9;
   font-family: "Inter", sans-serif;
   font-size: 0.9rem;
@@ -606,10 +607,10 @@ a {
 }
 .product-details .product-wrapper {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
+  flex-direction: column;
+  gap: 1rem;
   background: #fff;
-  padding: 2rem;
+  padding: 0.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -621,7 +622,7 @@ a {
 }
 .product-details .product-images .main-image {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 7px;
   object-fit: cover;
 }
 .product-details .product-images .thumbnail-row {
@@ -641,64 +642,69 @@ a {
 .product-details .product-images .thumbnail-row .thumb:hover {
   border-color: #007bff;
 }
-.product-details .product-info {
-  flex: 1 1 50%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.product-details .product-images .thumbnail-row .thumb.active {
+  border-color: #4caf50;
 }
 .product-details .product-info h1 {
   font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-.product-details .product-info .brand {
-  font-size: 0.85rem;
-  color: #666;
+  margin-bottom: 0.5em;
 }
 .product-details .product-info .price-box {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-size: 1rem;
+  margin-top: 0.5em;
+  font-size: 1.2rem;
 }
 .product-details .product-info .price-box .sale-price {
-  color: #e63946;
-  font-weight: 700;
+  color: #e53935;
+  font-weight: bold;
 }
 .product-details .product-info .price-box .original-price {
   text-decoration: line-through;
+  margin-left: 10px;
   color: #888;
 }
 .product-details .product-info .price-box .discount {
-  background: #e63946;
-  color: #fff;
-  padding: 0.2rem 0.4rem;
-  border-radius: 5px;
-  font-size: 0.8rem;
+  color: #43a047;
+  margin-left: 10px;
+}
+.product-details .product-info .price-box .variant-price-range {
+  font-weight: bold;
+  color: #444;
 }
 .product-details .product-info .price-box .regular-price {
   color: #333;
-  font-weight: 600;
-}
-.product-details .product-info .description {
-  font-size: 0.9rem;
-  color: #444;
-  line-height: 1.6;
 }
 .product-details .product-info .stock {
+  margin-top: 0.5em;
+  font-weight: 500;
+  color: #555;
+}
+.product-details .product-info .product-details-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 1rem;
+}
+.product-details .product-info .product-details-table th,
+.product-details .product-info .product-details-table td {
+  padding: 0.75em;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+.product-details .product-info .product-details-table th {
+  background-color: #f9f9f9;
   font-weight: 600;
-  color: #28a745;
+  width: 30%;
 }
-.product-details .product-info .stock::before {
-  content: "●";
-  color: inherit;
-  margin-right: 0.4rem;
+.product-details .product-info .description {
+  margin-top: 2em;
 }
-.product-details .product-info .btn-container {
-  margin-top: auto;
-  padding-top: 1rem;
+.product-details .product-info .description h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5em;
+}
+.product-details .product-info .description p {
+  line-height: 1.6;
+  color: #333;
 }
 
 .product-variants {
@@ -742,8 +748,9 @@ a {
   font-family: sans-serif;
 }
 .cart-container h1 {
+  font-size: 1.5rem;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 .cart-container .cart-table {
   width: 100%;
@@ -768,6 +775,11 @@ a {
 }
 .cart-container .cart-table .product-info span {
   font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cart-container .cart-table input[type=number] {
   width: 60px;
@@ -1373,14 +1385,14 @@ a {
 }
 
 .delivery-address-form {
+  box-sizing: border-box;
   margin: auto;
-  padding: 1rem;
+  padding: 0rem;
   border: 1px solid #ddd;
   border-radius: 8px;
   width: 98%;
 }
 .delivery-address-form fieldset {
-  border: 1px solid #ccc;
   border-radius: 6px;
   padding: 1rem 1.25rem;
   margin-bottom: 5px;
@@ -1388,6 +1400,7 @@ a {
   width: 98%;
 }
 .delivery-address-form fieldset legend {
+  width: 100%;
   font-size: 1.25rem;
   font-weight: 600;
   padding: 0 0.5rem;
@@ -1425,8 +1438,9 @@ a {
 
 .shipping-form {
   max-width: 700px;
-  margin: 2rem auto;
-  padding: 2rem;
+  margin: 1rem auto;
+  margin-right: 7px;
+  padding: 1rem;
   border: 1px solid #eee;
   border-radius: 10px;
   background-color: #fafafa;
@@ -1441,6 +1455,7 @@ a {
   color: #333;
 }
 .shipping-form .form-group .form-control {
+  box-sizing: border-box;
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid #ccc;
@@ -1459,6 +1474,8 @@ a {
   margin-bottom: 1rem;
 }
 .shipping-form button[type=submit] {
+  width: 100%;
+  margin-top: 4px;
   background-color: #2684ff;
   color: #fff;
   padding: 0.75rem 1.5rem;
@@ -1474,15 +1491,16 @@ a {
 }
 
 .payment-method-container {
-  padding: 1.5rem;
+  padding: 1rem;
   background-color: #f9f9f9;
   border-radius: 12px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
   max-width: 600px;
-  margin: 2rem auto;
+  margin: 0.3rem auto;
+  margin-right: 5px;
 }
 .payment-method-container h2 {
-  font-size: 1.75rem;
+  font-size: 1.2rem;
   margin-bottom: 1rem;
   color: #333;
 }
@@ -1509,6 +1527,7 @@ a {
   cursor: pointer;
 }
 .payment-method-container form button {
+  width: 100%;
   background-color: #007bff;
   color: white;
   padding: 0.75rem 1.5rem;
@@ -1559,16 +1578,20 @@ a {
 .checkout-confirm-container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   background: #fff;
   border-radius: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-family: "Segoe UI", sans-serif;
   margin-top: 5px;
+  margin-right: 6px;
 }
 .checkout-confirm-container h1, .checkout-confirm-container h3 {
   color: #333;
   margin-bottom: 1rem;
+}
+.checkout-confirm-container h1 {
+  font-size: 1rem;
 }
 .checkout-confirm-container p {
   margin: 0.5rem 0;
@@ -1576,6 +1599,14 @@ a {
 }
 .checkout-confirm-container p strong {
   color: #444;
+}
+.checkout-confirm-container .cart-table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  max-width: 100%;
 }
 .checkout-confirm-container .cart-table {
   width: 100%;
@@ -1588,6 +1619,15 @@ a {
   border: 1px solid #ddd;
   text-align: left;
   font-size: 0.95rem;
+}
+.checkout-confirm-container .cart-table td.product-name .clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2rem;
+  max-height: 2.4rem;
 }
 .checkout-confirm-container .cart-table thead {
   background-color: #f9f9f9;
@@ -1612,6 +1652,7 @@ a {
   font-weight: 500;
 }
 .checkout-confirm-container form input[type=tel] {
+  box-sizing: border-box;
   width: 100%;
   padding: 0.6rem;
   border: 1px solid #ccc;
@@ -1624,6 +1665,7 @@ a {
   outline: none;
 }
 .checkout-confirm-container form button {
+  width: 100%;
   padding: 0.75rem 1.5rem;
   background-color: #007bff;
   color: white;
@@ -1716,8 +1758,9 @@ a {
 
 .order-details-container {
   max-width: 800px;
-  margin: 2rem auto;
-  padding: 2rem;
+  margin: 0rem;
+  margin-right: 6px;
+  padding: 1rem;
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
@@ -1725,14 +1768,11 @@ a {
   transition: box-shadow 0.3s ease;
 }
 .order-details-container h1 {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  font-size: 1.75rem;
-  font-weight: 600;
+  text-align: left;
+  margin-bottom: 0.8rem;
+  font-size: 0.5rem;
+  font-weight: 500;
   color: #2c3e50;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .order-details-container .section {
   margin-bottom: 2rem;
@@ -1789,11 +1829,27 @@ a {
   color: #333;
 }
 .order-details-container .admin-actions .status-form select {
+  margin: 0px;
   margin-left: 0.5rem;
+  margin-bottom: 5px;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 0.95rem;
+  width: 97%;
+}
+.order-details-container .admin-actions .status-form select option {
+  padding-left: 0;
+  text-indent: 0;
+  margin-left: 0;
+}
+.order-details-container .admin-actions .status-form button {
+  border: none;
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 7px;
+  color: white;
+  background: #4caf50;
 }
 .order-details-container .admin-actions .danger-btn {
   background: #dc3545;
@@ -2508,12 +2564,19 @@ a {
   margin-top: 0.5rem;
   background: white;
   border: 1px solid #fff;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 .user-dashboard table th, .user-dashboard table td {
   text-align: left;
   padding: 0.75rem;
   border-bottom: 1px solid #fff;
   font-size: 0.95rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 180px;
 }
 .user-dashboard table th {
   background-color: #222;
@@ -2523,13 +2586,12 @@ a {
 .user-dashboard table tr:nth-child(even) {
   background-color: #edf2f7;
 }
+.user-dashboard table tr:hover {
+  background-color: #e2e8f0;
+  cursor: pointer;
+}
 .user-dashboard table ul {
   padding-left: 1rem;
-}
-.user-dashboard table {
-  display: block;
-  overflow-x: auto;
-  white-space: nowrap;
 }
 .user-dashboard .recently-viewed-carousel {
   display: flex;

@@ -12,7 +12,8 @@
     <%= paymentMethod === 'cod' ? 'Cash on Delivery' : 'MTN Mobile Money' %>
   </p>
 
-  <table class="cart-table">
+  <div class="cart-table-wrapper">
+    <table class="cart-table">
     <thead>
       <tr>
         <th>Product</th>
@@ -29,7 +30,14 @@
         total += subtotal;
       %>
         <tr>
-          <td><%= item.name %> <% if (item.variantName) { %><small>(<%= item.variantName %>)</small><% } %></td>
+          <td class="product-name">
+  <div class="clamp">
+    <%= item.name %>
+    <% if (item.variantName) { %>
+      <small>(<%= item.variantName %>)</small>
+    <% } %>
+  </div>
+</td>
           <td>UGX <%= price.toLocaleString() %></td>
           <td><%= item.quantity %></td>
           <td>UGX <%= subtotal.toLocaleString() %></td>
@@ -37,6 +45,7 @@
       <% }) %>
     </tbody>
   </table>
+  </div>
 
   <p><strong>Subtotal:</strong> UGX <%= total.toLocaleString() %></p>
   <p><strong>Delivery Fee:</strong> UGX <%= deliveryFee.toLocaleString() %></p>

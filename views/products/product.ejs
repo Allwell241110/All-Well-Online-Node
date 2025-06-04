@@ -9,54 +9,73 @@
   data-full-url="/products/product/view-image?url=<%= encodeURIComponent(product.images[0]?.url) %>" 
   style="cursor: zoom-in;" loading="lazy"/>
         <div class="thumbnail-row">
-          <% product.images.forEach((img, i) => { %>
-            <img src="<%= img.url %>" alt="Image <%= i+1 %>" class="thumb" loading="lazy"/>
-          <% }) %>
-        </div>
+  <% product.images.forEach((img, i) => { %>
+    <img 
+      src="<%= img.url %>" 
+      alt="Image <%= i+1 %>" 
+      class="thumb <%= i === 0 ? 'active' : '' %>" 
+      loading="lazy"/>
+  <% }) %>
+</div>
       </div>
-
       <div class="product-info">
         <h1><%= product.name %></h1>
-        <p class="brand">Brand: <%= product.brand || 'Unknown' %></p>
         <div class="price-box">
-  <% if (product.variants && product.variants.length) {
-    const prices = product.variants.map(v => !isNaN(v.salePrice) ? v.salePrice : v.price);
-    const validPrices = prices.filter(p => !isNaN(p));
-    const min = Math.min(...validPrices);
-    const max = Math.max(...validPrices);
-  %>
-    <span class="variant-price-range">
-      UGX <%= min.toLocaleString() %> 
-      <% if (min !== max) { %>
-        - UGX <%= max.toLocaleString() %>
-      <% } %>
-    </span>
-  <% } else if (product.salePrice && product.salePrice < product.price) {
-    const discount = Math.round(((product.price - product.salePrice) / product.price) * 100);
-  %>
-    <span class="sale-price">UGX <%= product.salePrice.toLocaleString() %></span>
-    <span class="original-price">UGX <%= product.price.toLocaleString() %></span>
-    <span class="discount">-<%= discount %>%</span>
-  <% } else { %>
-    <span class="regular-price">UGX <%= product.price.toLocaleString() %></span>
-  <% } %>
-</div>
-
-<p class="description"><%- product.description %></p>        <% if (!product.variants || !product.variants.length) { %>
-  <p class="stock"><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></p>
-<% } %>
-      </div>
-    </div>
-
-    <% if (product.variants && product.variants.length) { %>
-      <%- include('../partials/products/variantsView', { product: product }) %>
+    <% if (product.variants && product.variants.length) {
+      const prices = product.variants.map(v => !isNaN(v.salePrice) ? v.salePrice : v.price);
+      const validPrices = prices.filter(p => !isNaN(p));
+      const min = Math.min(...validPrices);
+      const max = Math.max(...validPrices);
+    %>
+      <span class="variant-price-range">
+        UGX <%= min.toLocaleString() %>
+        <% if (min !== max) { %> - UGX <%= max.toLocaleString() %><% } %>
+      </span>
+    <% } else if (product.salePrice && product.salePrice < product.price) {
+      const discount = Math.round(((product.price - product.salePrice) / product.price) * 100);
+    %>
+      <span class="sale-price">UGX <%= product.salePrice.toLocaleString() %></span>
+      <span class="original-price">UGX <%= product.price.toLocaleString() %></span>
+      <span class="discount">-<%= discount %>%</span>
+    <% } else { %>
+      <span class="regular-price">UGX <%= product.price.toLocaleString() %></span>
     <% } %>
+  </div>
+        <!-- Tabular Product Details -->
+        <table class="product-details-table">
+    <tbody>
+      <tr>
+        <th>Brand</th>
+        <td><%= product.brand || 'Unknown' %></td>
+      </tr>
+      <% if (!product.variants || !product.variants.length) { %>
+      <tr>
+        <th>Stock Status</th>
+        <td><%= product.stock > 0 ? 'In stock' : 'Out of stock' %></td>
+      </tr>
+      <% } %>
+      <% if (product.price) { %>
+      <tr>
+        <th>Price</th>
+        <td>UGX <%= (product.salePrice && product.salePrice < product.price) ? product.salePrice.toLocaleString() + ' (Discounted)' : product.price.toLocaleString() %></td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+        <!-- Description -->
+        <div class="description">
+    <h2>Description</h2>
+    <p><%- product.description %></p>
+  </div>
+</div>
+      <% if (product.variants && product.variants.length) { %>
+          <%- include('../partials/products/variantsView', { product: product }) %>
+      <% } %>
 
-    <div class="btn-container">
-      <%- include('../partials/addToCart'), { product } %>
-    </div>
-    <!-- WhatsApp Order Icon and Form -->
-<div style="margin-top: 20px;">
+      <div class="btn-container">
+          <%- include('../partials/addToCart'), { product } %>
+      </div>
+      <div style="margin-top: 20px;">
   <!-- Toggle Button with WhatsApp Icon -->
   <button type="button" onclick="showWhatsAppForm()" 
     style="background-color: #25D366; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
@@ -67,31 +86,31 @@
 
   <!-- WhatsApp Order Form -->
   <form id="whatsappOrderForm" action="/whatsapp-order" method="POST"
-    style="display: none; margin-top: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background-color: #f9f9f9;">
+    style="display: none; margin-top: 15px; border: 1px solid #ddd; padding: 5px; border-radius: 8px; background-color: #f9f9f9;">
 
     <input type="hidden" name="productId" value="<%= product._id %>">
 
     <div style="margin-bottom: 10px;">
       <label for="waName" style="display: block; font-weight: bold;">Your Name:</label>
-      <input value="<%= user ? user.name : ''%>" type="text" name="name" id="waName" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+      <input value="<%= user ? user.name : ''%>" type="text" name="name" id="waName" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
 
     <div style="margin-bottom: 10px;">
       <label for="waPhone" style="display: block; font-weight: bold;">Contact:</label>
-      <input type="text" name="phone" id="waPhone" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+      <input type="text" name="phone" id="waPhone" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
 
     <div style="margin-bottom: 10px;">
       <label for="waDistrict" style="display: block; font-weight: bold;">Delivery District:</label>
-      <input type="text" name="district" id="waDistrict" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+      <input type="text" name="district" id="waDistrict" required style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
 
     <div style="margin-bottom: 15px;">
       <label for="waQuantity" style="display: block; font-weight: bold;">Quantity:</label>
-      <input type="number" name="quantity" id="waQuantity" value="1" min="1" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+      <input type="number" name="quantity" id="waQuantity" value="1" min="1" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;">
     </div>
 
-    <button type="submit" style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+    <button type="submit" style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">
       Order via WhatsApp
     </button>
   </form>
@@ -107,30 +126,37 @@
     }, 100);
   }
 </script>
-  </div>
-  
   <%- include('../partials/products/reviews', { product, canReview }) %>
+    </div>
+
+  </div>
 </section>
   
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const mainImage = document.querySelector('.main-image');
-    const thumbnails = document.querySelectorAll('.thumb');
+<script>document.addEventListener('DOMContentLoaded', () => {
+  const mainImage = document.querySelector('.main-image');
+  const thumbnails = document.querySelectorAll('.thumb');
 
-    thumbnails.forEach(thumb => {
-      thumb.addEventListener('click', () => {
-        mainImage.src = thumb.src;
-mainImage.dataset.fullUrl = `/products/product/view-image?url=${encodeURIComponent(thumb.src)}`;      });
-    });
+  thumbnails.forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      // Update main image
+      mainImage.src = thumb.src;
+      mainImage.dataset.fullUrl = `/products/product/view-image?url=${encodeURIComponent(thumb.src)}`;
 
-    mainImage.addEventListener('click', () => {
-      const fullUrl = mainImage.dataset.fullUrl;
-      if (fullUrl) {
-        window.location.href = fullUrl;
-      }
+      // Remove active class from all thumbnails
+      thumbnails.forEach(t => t.classList.remove('active'));
+
+      // Add active class to clicked thumbnail
+      thumb.classList.add('active');
     });
   });
-</script>
+
+  mainImage.addEventListener('click', () => {
+    const fullUrl = mainImage.dataset.fullUrl;
+    if (fullUrl) {
+      window.location.href = fullUrl;
+    }
+  });
+});</script>
 <script>
   fbq('track', 'ViewContent', {
     content_name: "<%= product.name %>",
