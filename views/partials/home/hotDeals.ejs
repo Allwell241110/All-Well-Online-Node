@@ -7,27 +7,28 @@
   }
 %>
 
-<section class="hot-deals">
-  <h2 class="hot-deals__title">Hot Deals</h2>
-  <div class="hot-deals__container">
-    <div class="hot-deals__grid">
+<section class="py-4 bg-danger bg-opacity-10">
+  <div class="container px-3">
+    <h2 class="text-center bg-dark text-danger fw-bold py-3 mb-3 fs-6">Hot Deals</h2>
+
+    <div class="d-flex gap-2 overflow-auto pb-2 hot-deals-scroll">
       <% hotDeals.forEach(product => { 
         const discount = product.salePrice && product.price ? Math.round(100 * (product.price - product.salePrice) / product.price) : 0;
         const slug = slugify(product.name);
         const productUrl = `/products/${product._id}-${slug}`;
       %>
-        <a href="<%= productUrl %>" class="hot-deals__card" data-id="<%= product._id %>">
-          <div class="hot-deals__image-wrapper">
-            <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hot-deals__image" loading="lazy" />
+        <a href="<%= productUrl %>" class="text-decoration-none hot-deals-card position-relative flex-shrink-0" style="width: 180px; height: 220px;" data-id="<%= product._id %>">
+          <div class="position-relative ratio ratio-1x1 rounded overflow-hidden mb-1">
+            <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="img-fluid object-fit-cover w-100 h-100" loading="lazy">
             <% if (discount > 0) { %>
-              <span class="hot-deals__badge">-<%= discount %>%</span>
+              <span class="position-absolute top-0 end-0 mt-1 me-1 badge bg-danger text-white small fw-bold" style="width: 30%; height: 15%;">-<%= discount %>%</span>
             <% } %>
           </div>
-          <div class="hot-deals__info">
-            <h3 class="hot-deals__name"><%= product.name %></h3>
-            <p class="hot-deals__price">
-              <span class="hot-deals__sale-price">UGX <%= product.salePrice %></span>
-              <span class="hot-deals__original-price">UGX <%= product.price %></span>
+          <div class="px-1 text-center">
+            <h3 class="fs-6 fw-semibold text-dark text-truncate m-0"><%= product.name %></h3>
+            <p class="fs-6 m-0">
+              <span class="text-danger fw-bold">UGX <%= product.salePrice %></span>
+              <span class="text-muted text-decoration-line-through small">UGX <%= product.price %></span>
             </p>
           </div>
         </a>

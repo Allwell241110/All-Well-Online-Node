@@ -1,13 +1,18 @@
-<section class="featured-categories">
-  <div class="featured-categories__container">
-    <h2 class="featured-categories__title">Featured Categories</h2>
-    <div class="featured-categories__grid">
+<section class="py-4 bg-light">
+  <div class="container">
+    <h2 class="text-center bg-dark text-white py-3 mb-4 fs-6 fw-bold">Featured Categories</h2>
+    
+    <div class="row g-2">
       <% featuredCategories.forEach(category => { %>
-        <div class="featured-categories__card" data-id="<%= category.name %>">
-          <div class="featured-categories__image-wrapper">
-            <img src="<%= category.image?.url %>" alt="<%= category.name %>" class="featured-categories__image" loading="lazy" />
-          </div>
-          <h3 class="featured-categories__name"><%= category.name %></h3>
+        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+          <a href="/categories/products/<%= encodeURIComponent(category.name) %>" class="text-decoration-none text-dark">
+            <div class="card border-0 shadow-sm h-100 text-center p-2 hover-transform">
+              <div class="ratio ratio-1x1 mb-2 rounded overflow-hidden">
+                <img src="<%= category.image?.url %>" alt="<%= category.name %>" class="img-fluid object-fit-cover w-100 h-100" loading="lazy">
+              </div>
+              <h3 class="fs-6 fw-semibold text-truncate m-0"><%= category.name %></h3>
+            </div>
+          </a>
         </div>
       <% }); %>
     </div>

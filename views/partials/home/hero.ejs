@@ -7,29 +7,53 @@
   }
 %>
 
-<section class="hero">
-  <div class="hero__container">
-    <h2 class="hero__title">Top Picks for You</h2>
-    <div class="hero__products">
-      <% viewedProducts.forEach(product => { 
-          const slug = slugify(product.name);
-          const productUrl = `/products/${product._id}-${slug}`;
-      %>
-        <a href="<%= productUrl %>" class="hero__product-card" data-id="<%= product._id %>">
-          <img src="<%= product.images[0]?.url %>" alt="<%= product.name %>" class="hero__product-image" loading="lazy"/>
-          <div class="hero__product-info">
-            <h3 class="hero__product-name"><%= product.name %></h3>
-            <p class="hero__product-price">
-              <% if (product.salePrice) { %>
-                <span class="hero__sale-price">UGX <%= product.salePrice %></span>
-                <span class="hero__original-price">UGX <%= product.price %></span>
-              <% } else { %>
-                UGX <%= product.price %>
-              <% } %>
-            </p>
+<section class="py-4 bg-dark">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-4 text-white">Top Picks for You</h2>
+
+    <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="hover">
+
+      <!-- Carousel Inner -->
+      <div class="carousel-inner">
+        <% viewedProducts.forEach((product, index) => {
+            const slug = slugify(product.name);
+            const productUrl = `/products/${product._id}-${slug}`;
+        %>
+          <div class="carousel-item <%= index === 0 ? 'active' : '' %> d-flex justify-content-center">
+            <a href="<%= productUrl %>" class="card shadow-sm text-decoration-none text-dark w-100" style="max-width: 400px;">
+              <img src="<%= product.images[0]?.url %>" class="card-img-top object-fit-cover" alt="<%= product.name %>" style="height: 280px;" loading="lazy" />
+              <div class="card-body text-center pb-4">
+                <h5 class="card-title text-truncate mb-2" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <%= product.name %>
+                </h5>
+                <p class="card-text mb-0">
+                  <% if (product.salePrice) { %>
+                    <span class="text-danger fw-semibold">UGX <%= product.salePrice %></span>
+                    <span class="text-muted text-decoration-line-through ms-1">UGX <%= product.price %></span>
+                  <% } else { %>
+                    UGX <%= product.price %>
+                  <% } %>
+                </p>
+              </div>
+            </a>
           </div>
-        </a>
-      <% }); %>
+        <% }); %>
+      </div>
+
+      <!-- Carousel Indicators (INSIDE carousel) -->
+      <div class="carousel-indicators position-static mt-3">
+        <% viewedProducts.forEach((_, i) => { %>
+          <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="<%= i %>" class="<%= i === 0 ? 'active' : '' %>" aria-label="Slide <%= i+1 %>"></button>
+        <% }); %>
+      </div>
+
+      <!-- Controls -->
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
     </div>
   </div>
 </section>

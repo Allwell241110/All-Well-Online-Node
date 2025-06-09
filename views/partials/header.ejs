@@ -1,106 +1,96 @@
-<div class="all-header">
-  <!-- Logo Section -->
-  <div class="logo-container">
-    <img class="logo" src="/images/all_well_online.png" alt="All Well Online Logo" loading="lazy">
-    <h1 class="shop-name">All Well Online</h1>
-  </div>
-
-  <div class="header-container">
-    <div class="hamburger-icons-wrapper">
-    <!-- Hamburger Icon (for mobile) -->
-    <div class="hamburger" onclick="toggleMenu()">
-      <div></div><div></div><div></div>
-    </div>
-    <div class="cart-icon-profile-wrapper">
-    <!-- Cart Icon Section -->
-    <div class="cart-icon">
-      <a href="/cart">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 0 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-        </svg>
-        <% if (cartItemCount > 0) { %>
-          <span class="cart-count"><%= cartItemCount %></span>
-        <% } %>
-      </a>
-    </div>
-    <!-- User Login/Profile Section -->
-    <div class="user-profile">
-      <% if (user) { %>
-        <a 
-          href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>" 
-          class="profile-link"
-         >
-      <span><%= user.name %></span>
+<nav class="navbar navbar-expand-lg bg-light shadow-sm">
+  <div class="container-fluid">
+    <!-- Logo -->
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="/images/all_well_online.png" alt="All Well Online Logo" style="height: 50px;" class="me-2" loading="lazy">
+      <span class="h5 mb-0">All Well Online</span>
     </a>
-    <form action="/auth/logout" method="POST" class="logout-form">
-      <input type="hidden" name="redirectTo" value="<%= originalUrl %>">
-      <button class="logout-btn" type="submit">Logout</button>
-    </form>
-  <% } else { %>
-    <a href="/auth/login" class="login-btn">Login</a>
-  <% } %>
-</div>
-    </div>
-    </div>
 
+    <!-- Always-visible Right Icons (Cart, Search, Login/Logout) -->
+ <div class="d-flex flex-wrap align-items-center order-lg-2">
+  <!-- Search Form -->
+  <form id="searchForm" class="d-flex me-3 mb-2 mb-lg-0" role="search">
+    <input class="form-control me-2" type="search" placeholder="Search products..." id="searchInput" required>
+    <button class="btn btn-outline-secondary" type="submit">Search</button>
+  </form>
 
-<!-- Sidebar Menu -->
-<!-- Sidebar Menu -->
-<div id="sidebar" class="sidebar">
-  <div class="section">
-    <h2 class="section-title">Navigation</h2>
-    <ul class="links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/products">Products</a></li>
-      <li><a href="/cart">Cart (<%= cartItemCount %>)</a></li>
-      <li><a href="/about">About</a></li>      
-      <% if (user) { %>
-        <li><a href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>">Profile</a></li>
-      <% } else { %>
-        <li><a href="/auth/login">Login</a></li>
+  <!-- Cart Icon -->
+  <div class="me-3 position-relative mb-2 mb-lg-0">
+    <a href="/cart" class="text-dark fs-5 position-relative">
+      <i class="bi bi-cart"></i>
+      <% if (cartItemCount > 0) { %>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          <%= cartItemCount %>
+        </span>
       <% } %>
-    </ul>
+    </a>
   </div>
 
-  <% if (user && user.role === 'admin') { %>
-    <div class="section">
-      <h2 class="section-title">Admin Panel</h2>
-      <ul class="admin-links">
-        <li><a href="/products/constant/product-nature">Add Product</a></li>
-        <li><a href="/upload-csv">Bulk Upload</a></li>
-        <li><a href="/categories/constant/all-categories">Manage Categories</a></li>
-        <li><a href="/orders">Orders</a></li>
+  <!-- User Info -->
+  <div class="d-flex align-items-center mb-2 mb-lg-0">
+    <% if (user) { %>
+      <span class="me-2"><%= user.name %></span>
+      <form action="/auth/logout" method="POST" class="d-inline">
+        <input type="hidden" name="redirectTo" value="<%= originalUrl %>">
+        <button class="btn btn-sm btn-outline-secondary" type="submit">Logout</button>
+      </form>
+    <% } else { %>
+      <a href="/auth/login" class="btn btn-sm btn-primary">Login</a>
+    <% } %>
+  </div>
+</div>
+
+    <!-- Hamburger Toggler -->
+    <button class="navbar-toggler order-lg-3" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Collapsible Navigation -->
+    <div class="collapse navbar-collapse order-lg-1" id="mainNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/products">Products</a></li>
+        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+
+        <% if (user) { %>
+          <li class="nav-item">
+            <a class="nav-link" href="/dashboard/<%= user.role === 'admin' ? 'admin' : 'user' %>">Profile</a>
+          </li>
+        <% } %>
+
+        <% if (user && user.role === 'admin') { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+              Admin Panel
+            </a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="/products/constant/product-nature">Add Product</a></li>
+              <li><a class="dropdown-item" href="/upload-csv">Bulk Upload</a></li>
+              <li><a class="dropdown-item" href="/categories/constant/all-categories">Manage Categories</a></li>
+              <li><a class="dropdown-item" href="/orders">Orders</a></li>
+            </ul>
+          </li>
+        <% } %>
+
+        <% if (metaCategories.length > 0) { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="categoryDropdown" role="button" data-bs-toggle="dropdown">
+              Categories
+            </a>
+            <ul class="dropdown-menu">
+              <% metaCategories.forEach(category => { %>
+                <li>
+                  <a class="dropdown-item" href="/categories/main-categories/<%= category._id %>">
+                    <%= category.name %>
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          </li>
+        <% } %>
       </ul>
     </div>
-  <% } %>
-
-  <div class="section">
-    <h2 class="section-title">Our Categories</h2>
-    <ul class="categories">
-      <% metaCategories.forEach(category => { %>
-        <li>
-          <a 
-            href="/categories/main-categories/<%= category._id %>" 
-            class="meta-category-link" 
-            data-category-name="<%= category.name %>">
-            <%= category.name %>
-          </a>
-        </li>
-      <% }); %>
-    </ul>
   </div>
-</div>
-
-    <!-- Overlay to Close Sidebar -->
-    <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-    <!-- Search Bar Form -->
-    <form id="searchForm" class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search products..." required>
-      <button type="submit">Search</button>
-    </form>
-
-  </div>
-</div>
+</nav>
 
 <script src="/js/header.js"></script>
