@@ -154,7 +154,7 @@
       if (response.ok) {
         const result = await response.json();
         alert('Product saved successfully!');
-        window.location.href = '/products';
+        window.location.href = document.referrer || '/products';
       } else {
         const error = await response.json();
         alert('Error: ' + (error.message || 'Something went wrong.'));
