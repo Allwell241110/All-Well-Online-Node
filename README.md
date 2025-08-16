@@ -36,9 +36,35 @@ All Well Online Store is a full-stack e-commerce web application built with **No
 ├── models/            # Mongoose models
 ├── public/            # Static files (CSS, JS, images)
 ├── routes/            # Express routes organized by feature
+├── scripts/           # Automation or utility scripts
+├── utils/             # Helper functions
 ├── views/             # EJS templates and layouts
 ├── app.js             # Main server file
 └── package.json
+```
+
+## Environment Variables
+
+The application uses the following environment variables in a `.env` file:
+
+```
+MONGO_URI=your_mongodb_connection_string
+IMGUR_CLIENT_ID=your_imgur_client_id
+EMAIL_USER=your_email_address
+EMAIL_PASS=your_email_password
+SESSION_SECRET=your_session_secret
+ADMIN_EMAIL=admin_email_for_seeding
+ADMIN_USERNAME=admin_username_for_seeding
+ADMIN_PASSWORD=admin_password_for_seeding
+FRONT_END_HOST=your_frontend_host_url
+MOMO_BASE_URL=mobile_money_base_url
+MOMO_SUBSCRIPTION_KEY=subscription_key_for_momo
+MOMO_UUID_OR_API_USER=uuid_or_api_user_for_momo
+MOMO_API_KEY=momo_api_key
+TARGET_ENVIRONMENT=environment_type_for_momo
+BUSSINESS_NUMBER=business_number_for_payments
+FB_PIXEL_ID=facebook_pixel_id
+FB_CAPI_ACCESS_TOKEN=facebook_capi_access_token
 ```
 
 ## Installation
@@ -56,13 +82,7 @@ cd All-Well-Online-Node
 npm install
 ```
 
-3. Create a `.env` file in the root with the following variables:
-
-```
-PORT=3000
-MONGO_URI=your_mongodb_connection_string
-SESSION_SECRET=your_session_secret
-```
+3. Create a `.env` file in the root with the environment variables listed above.
 
 4. Seed the initial admin user (runs automatically when server starts).
 
